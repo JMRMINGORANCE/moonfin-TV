@@ -82,6 +82,52 @@ def rebrand_dart_strings(path: Path):
     return count
 
 
+# Seerr con aprobación automática: en español el botón dice "Descargar".
+ES_OVERRIDES = {
+    "request": "Descargar",
+    "request4k": "Descargar en 4K",
+    "requestMore": "Descargar más",
+    "requestMore4k": "Descargar más en 4K",
+    "submitRequest": "Descargar",
+}
+ES_METHOD_OVERRIDES = {
+    "requestSeriesOrMovie": "Descargar {type}",
+    "requestSeriesOrMovie4k": "Descargar {type} en 4K",
+}
+
+
+def spanish_overrides():
+    count = 0
+    for arb in sorted((SRC / "lib/l10n").glob("app_es*.arb")):
+        data = json.loads(arb.read_text(encoding="utf-8"))
+        for key, value in {**ES_OVERRIDES, **ES_METHOD_OVERRIDES}.items():
+            if data.get(key) != value:
+                data[key] = value
+                count += 1
+        arb.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+    dart = SRC / "lib/l10n/app_localizations_es.dart"
+    if dart.exists():
+        text = dart.read_text(encoding="utf-8")
+        for key, value in ES_OVERRIDES.items():
+            text, n = re.subn(
+                rf"(String get {key} =>\s*)'(?:[^'\\]|\\.)*';",
+                lambda m, v=value: f"{m.group(1)}'{v}';",
+                text,
+            )
+            count += n
+        for key, value in ES_METHOD_OVERRIDES.items():
+            text, n = re.subn(
+                rf"(String {key}\(String type\) \{{\s*return )'(?:[^'\\]|\\.)*';",
+                lambda m, v=value: f"{m.group(1)}'{v.replace('{type}', '$type')}';",
+                text,
+            )
+            count += n
+        dart.write_text(text, encoding="utf-8")
+    log(f"textos de Seerr en español cambiados a Descargar: {count}")
+
+
 def rebrand_translations():
     total = 0
     for arb in sorted((SRC / "lib/l10n").glob("*.arb")):
@@ -235,6 +281,7 @@ if __name__ == "__main__":
     if not (SRC / "pubspec.yaml").exists():
         sys.exit("Ejecuta este script desde la carpeta del código (src).")
     rebrand_translations()
+    spanish_overrides()
     make_images()
     android_colors()
     shutil.copy(HERE / "taquito_head.svg", SRC / "assets/icons/taquito_head.svg")

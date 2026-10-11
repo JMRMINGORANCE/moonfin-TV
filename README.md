@@ -17,7 +17,8 @@ GitHub Actions descarga un commit concreto de Moonfin, aplica el parche, copia `
 - **Idioma**: español por defecto en la interfaz, el audio y los subtítulos.
 - **Inicio**: cabecera destacada, *Seguir viendo*, **Lo último añadido** (de todas las bibliotecas, con etiqueta NUEVO), *Top 10* y el resto de filas.
 - **Bibliotecas**: siempre ordenadas con lo último añadido primero (también la rejilla de *Ver todo*). Seerr mantiene su propio orden.
-- **Ficha de detalle**, **Seerr** y navegación con mando al estilo de las plataformas de streaming.
+- **Seerr**: todas las categorías del explorador (tendencias, populares, próximos estrenos, géneros, estudios, cadenas, lista de seguimiento y las filas creadas en Seerr) directamente en su pantalla. Sin solicitudes ni problemas: con la aprobación automática, el botón de películas y series dice **Descargar**.
+- **Ficha de detalle** y navegación con mando al estilo de las plataformas de streaming.
 - **Android**: id `es.josemingorance.taquitoflix`, nombre *TaquitoFlix*.
 
 Lo que conserva el nombre Moonfin a propósito: las rutas y mensajes del plugin Moonfin de tu servidor (`/Moonfin/...`), el nombre con el que la app se presenta al servidor y los nombres internos del código. Cambiarlos rompería Seerr y la sincronización con el plugin.

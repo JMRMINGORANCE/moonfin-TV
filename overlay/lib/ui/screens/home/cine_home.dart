@@ -377,6 +377,8 @@ class _CineHomeState extends State<_CineHome> {
       if (row.rowType == HomeRowType.mediaBar ||
           row.rowType == HomeRowType.libraryTiles ||
           row.rowType == HomeRowType.libraryTilesSmall ||
+          row.id == 'seerr_shortcuts' ||
+          row.id == 'seerr_recent_requests' ||
           row.items.isEmpty) {
         continue;
       }
