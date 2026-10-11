@@ -499,18 +499,19 @@ index 0faf067..3976660 100644
          accessToken: credentials.accessToken,
          lastUsed: DateTime.now(),
 diff --git a/lib/ui/screens/detail/item_detail_screen.dart b/lib/ui/screens/detail/item_detail_screen.dart
-index ecb75f7..39684e8 100644
+index ecb75f7..2496faa 100644
 --- a/lib/ui/screens/detail/item_detail_screen.dart
 +++ b/lib/ui/screens/detail/item_detail_screen.dart
-@@ -47,6 +47,7 @@ import '../../../preference/detail_section_layout.dart';
+@@ -47,6 +47,8 @@ import '../../../preference/detail_section_layout.dart';
  import 'upcoming_episode_badge.dart';
  import 'detail_episode_images.dart';
  import 'minimalist/minimalist_detail_content.dart';
 +import 'cine/cine_detail_content.dart';
++import '../../widgets/cine/cine_widgets.dart';
  import 'nouveau/nouveau_detail_content.dart';
  import 'nouveau/hero/nouveau_action_buttons.dart';
  import 'modern/modern_detail_content.dart';
-@@ -803,6 +804,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen>
+@@ -803,6 +805,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen>
            ],
          ),
        ),
@@ -532,6 +533,35 @@ index ecb75f7..39684e8 100644
        ItemDetailState.ready => switch (_prefs.effectiveDetailScreenStyle) {
          DetailScreenStyle.classic => _DetailContent(
            viewModel: _viewModel,
+@@ -6875,7 +6892,8 @@ class DetailActionButtonsState extends State<DetailActionButtons> {
+           isActive: onWatchlist,
+           activeColor: AppColorScheme.accent,
+         ),
+-      if (seerr != null &&
++      if (!kCineUi &&
++          seerr != null &&
+           seerr.canReportIssue &&
+           shows(DetailButton.seerrReportIssue))
+         DetailButton.seerrReportIssue: _DetailActionButton(
+@@ -6890,7 +6908,8 @@ class DetailActionButtonsState extends State<DetailActionButtons> {
+             initialEpisode: item.type == 'Episode' ? item.indexNumber : null,
+           ),
+         ),
+-      if (seerr != null &&
++      if (!kCineUi &&
++          seerr != null &&
+           seerr.canManageRequests &&
+           seerrPendingRequests(seerr.state).isNotEmpty &&
+           shows(DetailButton.seerrManage))
+@@ -13779,7 +13798,7 @@ Widget? _seerrRequestButton(
+   if (action.kind != SeerrRequestActionKind.request) return null;
+   return _DetailActionButton(
+     label: action.label,
+-    icon: Icons.add,
++    icon: kCineUi ? Icons.download_rounded : Icons.add,
+     isPrimary: isPrimary,
+     focusNode: focusNode,
+     autofocus: autofocus,
 diff --git a/lib/ui/screens/home/home_screen.dart b/lib/ui/screens/home/home_screen.dart
 index b764fb4..b91ebda 100644
 --- a/lib/ui/screens/home/home_screen.dart
