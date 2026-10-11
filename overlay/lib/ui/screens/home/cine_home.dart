@@ -1,9 +1,10 @@
 part of 'home_screen.dart';
 
 // ---------------------------------------------------------------------------
-// Moonfin Cine: portada al estilo de las plataformas de streaming. Cabecera
-// destacada con Reproducir / Más información, filas de carátulas, "Seguir
-// viendo" con barra de progreso roja y "Top 10" con números gigantes.
+// TaquitoFlix: portada al estilo de las plataformas de streaming. Cabecera
+// destacada con Reproducir / Más información, "Seguir viendo" con barra de
+// progreso roja, "Lo último añadido" de todas las bibliotecas, "Top 10" con
+// números gigantes y el resto de filas.
 // Los componentes visuales viven en ui/widgets/cine/cine_widgets.dart.
 // ---------------------------------------------------------------------------
 
@@ -26,6 +27,8 @@ class _CineHomeState extends State<_CineHome> {
   final ValueNotifier<double> _scrollOffset = ValueNotifier(0);
   VoidCallback? _previousFocusContent;
   bool _initialFocusDone = false;
+  List<AggregatedItem> _latest = const [];
+  bool _latestRequested = false;
 
   @override
   void initState() {
@@ -36,6 +39,53 @@ class _CineHomeState extends State<_CineHome> {
     _previousFocusContent =
         NavigationLayout.focusContentFromNavbarNotifier.value;
     NavigationLayout.focusContentFromNavbarNotifier.value = _focusContent;
+    unawaited(_loadLatest());
+  }
+
+  /// Lo último añadido en todas las bibliotecas (los episodios nuevos se
+  /// agrupan en su serie), con lo más reciente primero.
+  Future<void> _loadLatest() async {
+    if (_latestRequested) return;
+    _latestRequested = true;
+    try {
+      final client = GetIt.instance<MediaServerClient>();
+      final response = await client.itemsApi.getLatestItems(
+        limit: 40,
+        fields: 'Overview,Genres,CommunityRating,OfficialRating,'
+            'ProductionYear,UserData,DateCreated,PrimaryImageAspectRatio',
+        enableImageTypes: 'Primary,Backdrop,Logo,Thumb',
+        imageTypeLimit: 1,
+      );
+      final raw = response['Items'];
+      if (raw is! List || !mounted) return;
+      final serverId = widget.viewModel.rows
+              .expand((r) => r.items)
+              .firstWhereOrNull((i) => i.serverId != 'seerr')
+              ?.serverId ??
+          client.baseUrl;
+      const kinds = {'Movie', 'Series', 'Episode', 'Video', 'MusicVideo'};
+      final items = <AggregatedItem>[
+        for (final m in raw)
+          if (m is Map<String, dynamic> &&
+              m['Id'] != null &&
+              kinds.contains(m['Type']))
+            AggregatedItem(id: m['Id'].toString(), serverId: serverId, rawData: m),
+      ];
+      int stamp(AggregatedItem i) =>
+          DateTime.tryParse(i.rawData['DateCreated']?.toString() ?? '')
+              ?.millisecondsSinceEpoch ??
+          0;
+      items.sort((a, b) => stamp(b).compareTo(stamp(a)));
+      if (mounted) setState(() => _latest = items);
+    } catch (_) {
+      _latestRequested = false;
+    }
+  }
+
+  bool _isRecent(AggregatedItem item) {
+    final created = DateTime.tryParse(item.rawData['DateCreated']?.toString() ?? '');
+    return created != null &&
+        DateTime.now().difference(created) < const Duration(days: 14);
   }
 
   @override
@@ -62,6 +112,7 @@ class _CineHomeState extends State<_CineHome> {
 
   void _onDataChanged() {
     if (!mounted) return;
+    if (_latest.isEmpty) unawaited(_loadLatest());
     setState(() {});
     if (!_initialFocusDone && PlatformDetection.useLeanbackUi) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -241,6 +292,21 @@ class _CineHomeState extends State<_CineHome> {
     return _ContentRowsState._resolveImageUrl(item, api, height, true, scale);
   }
 
+  CineTile _latestTile(AggregatedItem item) {
+    final base = _tile(null, item, false);
+    if (!_isRecent(item)) return base;
+    return CineTile(
+      id: base.id,
+      title: base.title,
+      imageUrl: base.imageUrl,
+      badge: item.type == 'Series'
+          ? cineText(context, 'NUEVOS EPISODIOS', 'NEW EPISODES')
+          : cineText(context, 'NUEVO', 'NEW'),
+      onTap: base.onTap,
+      onLongPress: base.onLongPress,
+    );
+  }
+
   CineTile _tile(HomeRow? row, AggregatedItem item, bool landscape) {
     final posterW = cinePosterWidth(context);
     final h = landscape ? posterW * 1.75 * 9 / 16 : posterW * 1.5;
@@ -279,6 +345,33 @@ class _CineHomeState extends State<_CineHome> {
 
     final rowWidgets = <Widget>[];
     var inserted = false;
+    void insertFeatured() {
+      if (inserted) return;
+      inserted = true;
+      if (_latest.isNotEmpty) {
+        rowWidgets.add(
+          CineRow(
+            key: const ValueKey('cine_latest'),
+            title: cineText(context, 'Lo último añadido', 'Recently added'),
+            tiles: [for (final it in _latest) _latestTile(it)],
+          ),
+        );
+      }
+      if (top10.length >= 5) {
+        rowWidgets.add(
+          CineTop10Row(
+            key: const ValueKey('cine_top10'),
+            title: cineText(
+              context,
+              'Top 10 en tu biblioteca',
+              'Top 10 in your library',
+            ),
+            tiles: [for (final it in top10) _tile(null, it, false)],
+          ),
+        );
+      }
+    }
+
     for (var i = 0; i < allRows.length; i++) {
       final row = allRows[i];
       if (row.rowType == HomeRowType.mediaBar ||
@@ -287,6 +380,9 @@ class _CineHomeState extends State<_CineHome> {
           row.items.isEmpty) {
         continue;
       }
+      final isProgress = row.rowType == HomeRowType.resume ||
+          row.rowType == HomeRowType.nextUp;
+      if (!isProgress) insertFeatured();
       final landscape = _isLandscapeRow(row);
       rowWidgets.add(
         CineRow(
@@ -304,21 +400,8 @@ class _CineHomeState extends State<_CineHome> {
           onNearEnd: () => widget.viewModel.loadMoreForRow(i),
         ),
       );
-      if (!inserted && top10.length >= 5) {
-        inserted = true;
-        rowWidgets.add(
-          CineTop10Row(
-            key: const ValueKey('cine_top10'),
-            title: cineText(
-              context,
-              'Top 10 en tu biblioteca',
-              'Top 10 in your library',
-            ),
-            tiles: [for (final it in top10) _tile(null, it, false)],
-          ),
-        );
-      }
     }
+    insertFeatured();
 
     final loading = widget.viewModel.isLoading && rowWidgets.isEmpty;
     final upEdge = cineFocusNavbar;
@@ -405,15 +488,11 @@ class _CineHomeState extends State<_CineHome> {
               right: 0,
               child: CineMobileTopBar(
                 scrollOffset: _scrollOffset,
-                leading: const Text(
-                  'MOONFIN',
-                  style: TextStyle(
-                    color: cineRed,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    height: 1.0,
-                  ),
+                leading: Image.asset(
+                  'assets/images/logo_and_text.png',
+                  height: 34,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.centerLeft,
                 ),
                 chips: _mobileChips(context, allRows),
               ),
