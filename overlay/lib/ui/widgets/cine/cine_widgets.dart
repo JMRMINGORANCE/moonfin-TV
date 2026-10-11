@@ -50,7 +50,8 @@ bool get cineNavbarIsLeft =>
 double cineSidePadding(BuildContext context) {
   if (PlatformDetection.useMobileUi) return 12;
   final w = MediaQuery.sizeOf(context).width * 0.045;
-  return cineNavbarIsLeft ? w + 24 : w;
+  if (!cineNavbarIsLeft) return w;
+  return w < 96 ? 96 : w + 24;
 }
 
 double cinePosterWidth(BuildContext context) {
@@ -873,12 +874,15 @@ class CineHero extends StatelessWidget {
   }
 
   Widget _posterCard(BuildContext context, Size size) {
-    final image = data.posterUrl ?? data.backdropUrl;
+    final backdrop = data.backdropUrl;
+    final useBackdrop = backdrop != null && backdrop.isNotEmpty;
+    final image = useBackdrop ? backdrop : data.posterUrl;
+    final showTitle = useBackdrop || image == null || image.isEmpty;
     final topInset = MediaQuery.paddingOf(context).top;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, topInset + mobileTopInset, 20, 8),
+      padding: EdgeInsets.fromLTRB(16, topInset + mobileTopInset, 16, 8),
       child: AspectRatio(
-        aspectRatio: 0.72,
+        aspectRatio: 0.78,
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -895,8 +899,11 @@ class CineHero extends StatelessWidget {
                   BoundedNetworkImage(
                     imageUrl: image,
                     fit: BoxFit.cover,
+                    alignment: useBackdrop
+                        ? const Alignment(0.15, 0)
+                        : Alignment.center,
                     minWidth: 480,
-                    maxWidth: 1080,
+                    maxWidth: 1280,
                     priority: ImageFetchPriority.high,
                     errorBuilder: (_, _, _) =>
                         const ColoredBox(color: cineCardBg),
@@ -908,8 +915,12 @@ class CineHero extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      stops: [0.45, 1.0],
-                      colors: [Color(0x00000000), Color(0xF0000000)],
+                      stops: [0.35, 0.7, 1.0],
+                      colors: [
+                        Color(0x00000000),
+                        Color(0x99000000),
+                        Color(0xF2000000),
+                      ],
                     ),
                   ),
                 ),
@@ -921,9 +932,11 @@ class CineHero extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _eyebrow(),
-                      cineTitleOrLogo(data, size.width * 0.6, 30,
-                          TextAlign.center),
-                      const SizedBox(height: 10),
+                      if (showTitle) ...[
+                        cineTitleOrLogo(data, size.width * 0.6, 30,
+                            TextAlign.center),
+                        const SizedBox(height: 10),
+                      ],
                       Text(
                         data.metaLine,
                         textAlign: TextAlign.center,

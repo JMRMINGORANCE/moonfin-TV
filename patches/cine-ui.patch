@@ -155,7 +155,7 @@ index 1b3cbfb..79c293d 100644
    BottomNavTab.folders,
  ];
 diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
-index 654dc28..69fe0fc 100644
+index 654dc28..c4c6c69 100644
 --- a/lib/preference/user_preferences.dart
 +++ b/lib/preference/user_preferences.dart
 @@ -1553,7 +1553,7 @@ class UserPreferences extends ChangeNotifier {
@@ -179,6 +179,15 @@ index 654dc28..69fe0fc 100644
 +            ? NavbarPosition.bottom
 +            : NavbarPosition.top,
      values: NavbarPosition.values,
+   );
+ 
+@@ -1797,7 +1802,7 @@ class UserPreferences extends ChangeNotifier {
+   // so they land on Dock. That's the whole migration.
+   static final bottomNavbarStyle = EnumPreference(
+     key: 'pref_bottom_navbar_style',
+-    defaultValue: BottomNavbarStyle.dock,
++    defaultValue: BottomNavbarStyle.strip,
+     values: BottomNavbarStyle.values,
    );
  
 @@ -2609,9 +2614,8 @@ class UserPreferences extends ChangeNotifier {
@@ -335,6 +344,30 @@ index ae3e265..ee709bb 100644
        VisualThemeId.neonPulse => AppTheme.neonPulseMagenta,
        VisualThemeId.glass => AppTheme.white,
        VisualThemeId.eightbitHero => AppTheme.eightBitGold,
+diff --git a/lib/ui/widgets/navigation_layout.dart b/lib/ui/widgets/navigation_layout.dart
+index 9698869..88da71b 100644
+--- a/lib/ui/widgets/navigation_layout.dart
++++ b/lib/ui/widgets/navigation_layout.dart
+@@ -16,6 +16,7 @@ import 'package:moonfin_design/moonfin_design.dart';
+ import 'package:playback_core/playback_core.dart';
+ import '../navigation/destinations.dart';
+ import '../navigation/route_lifecycle_observer.dart';
++import 'cine/cine_widgets.dart';
+ 
+ class NavigationLayout extends StatefulWidget {
+   final String? activeRoute;
+@@ -37,6 +38,11 @@ class NavigationLayout extends StatefulWidget {
+   ];
+ 
+   static NavbarPosition sanitizeNavbarPosition(NavbarPosition position) {
++    // Cine: navegación de plataforma de streaming en todos los dispositivos.
++    if (kCineUi) {
++      if (allowBottomNavbar) return NavbarPosition.bottom;
++      if (PlatformDetection.isTV) return NavbarPosition.left;
++    }
+     if (position == NavbarPosition.bottom && !allowBottomNavbar) {
+       return NavbarPosition.top;
+     }
 diff --git a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart b/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
 index 1006910..549abdd 100644
 --- a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
