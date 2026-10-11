@@ -281,7 +281,12 @@ class _CineHomeState extends State<_CineHome> {
     var inserted = false;
     for (var i = 0; i < allRows.length; i++) {
       final row = allRows[i];
-      if (row.rowType == HomeRowType.mediaBar || row.items.isEmpty) continue;
+      if (row.rowType == HomeRowType.mediaBar ||
+          row.rowType == HomeRowType.libraryTiles ||
+          row.rowType == HomeRowType.libraryTilesSmall ||
+          row.items.isEmpty) {
+        continue;
+      }
       final landscape = _isLandscapeRow(row);
       rowWidgets.add(
         CineRow(
@@ -315,7 +320,7 @@ class _CineHomeState extends State<_CineHome> {
       }
     }
 
-    final loading = widget.viewModel.isLoading && allRows.isEmpty;
+    final loading = widget.viewModel.isLoading && rowWidgets.isEmpty;
     final upEdge = cineFocusNavbar;
     final leftEdge = cineNavbarIsLeft ? cineFocusNavbar : null;
 
@@ -331,6 +336,7 @@ class _CineHomeState extends State<_CineHome> {
                     ? SizedBox(height: mobile ? 140 : 200)
                     : CineHero(
                         data: hero.data,
+                        mobileTopInset: 100,
                         buttons: (expand) => [
                           if (expand)
                             Expanded(
@@ -399,6 +405,16 @@ class _CineHomeState extends State<_CineHome> {
               right: 0,
               child: CineMobileTopBar(
                 scrollOffset: _scrollOffset,
+                leading: const Text(
+                  'MOONFIN',
+                  style: TextStyle(
+                    color: cineRed,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                    height: 1.0,
+                  ),
+                ),
                 chips: _mobileChips(context, allRows),
               ),
             ),

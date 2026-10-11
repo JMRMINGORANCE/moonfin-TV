@@ -325,7 +325,7 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
                 child: CineMobileTopBar(
                   scrollOffset: _scrollOffset,
                   leading: Padding(
-                    padding: const EdgeInsets.only(left: 40),
+                    padding: const EdgeInsets.only(left: 56, top: 6),
                     child: cinePageTitle(context, 'Seerr'),
                   ),
                   chips: chips,
