@@ -1,0 +1,178 @@
+name: Build Moonfin Cine (Android, Android TV, Tizen)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  UPSTREAM_REPO: https://github.com/Moonfin-Client/Moonfin-Core.git
+  # Commit de Moonfin sobre el que se aplica el parche. Para actualizar a una
+  # versión nueva de Moonfin, cambia este SHA y regenera patches/cine-ui.patch.
+  UPSTREAM_REF: a80f16524ca84f127da62a1ff56fdb9caa07fd7f
+  FLUTTER_VERSION: '3.47.2'
+
+jobs:
+  android:
+    name: Android + Android TV (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar Moonfin y aplicar el parche Cine
+        run: |
+          git init -q src && cd src
+          git remote add origin "$UPSTREAM_REPO"
+          git fetch -q --depth 1 origin "$UPSTREAM_REF"
+          git checkout -q FETCH_HEAD
+          git apply --whitespace=nowarn ../patches/*.patch
+          cp -r ../overlay/. .
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Firma (opcional, con secretos)
+        working-directory: src
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Sin keystore: el APK se firma con clave de debug."
+            exit 0
+          fi
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+          cat > android/keystore.properties <<PROPS
+          storeFile=../release.keystore
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          PROPS
+
+      - name: Compilar APKs
+        working-directory: src
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '[:space:]')
+          BUILD=$(grep '^version:' pubspec.yaml | cut -d'+' -f2 | tr -d '[:space:]')
+          TV_VERSION=$(grep '^\s*android_tv_version:' pubspec.yaml | sed 's/.*:[[:space:]]*//' | tr -d '[:space:]')
+          TV_BUILD=$(grep '^\s*android_tv_build_number:' pubspec.yaml | sed 's/.*:[[:space:]]*//' | tr -d '[:space:]')
+          flutter pub get
+          flutter build apk --release --flavor mobile \
+            --build-name "$VERSION" --build-number "$BUILD" \
+            --dart-define=DISTRIBUTION_CHANNEL=apk
+          flutter build apk --release --flavor androidTv \
+            --build-name "$TV_VERSION" --build-number "$TV_BUILD" \
+            --dart-define=MOONFIN_FORCE_TV=true \
+            --dart-define=DISTRIBUTION_CHANNEL=android_tv_apk
+          mkdir -p ../out
+          cp build/app/outputs/flutter-apk/app-mobile-release.apk "../out/MoonfinCine_Android_v${VERSION}.apk"
+          cp build/app/outputs/flutter-apk/app-androidtv-release.apk "../out/MoonfinCine_AndroidTV_v${TV_VERSION}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: out/*.apk
+
+  tizen:
+    name: Samsung Tizen (WGT)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar Moonfin y aplicar el parche Cine
+        run: |
+          git init -q src && cd src
+          git remote add origin "$UPSTREAM_REPO"
+          git fetch -q --depth 1 origin "$UPSTREAM_REF"
+          git checkout -q FETCH_HEAD
+          git apply --whitespace=nowarn ../patches/*.patch
+          cp -r ../overlay/. .
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Compilar web en modo TV
+        working-directory: src
+        run: |
+          flutter pub get
+          # Sin --wasm: el navegador de Tizen no soporta WasmGC.
+          flutter build web --release --base-href / \
+            --dart-define=MOONFIN_FORCE_TV=true \
+            --dart-define=DISTRIBUTION_CHANNEL=tizen
+
+      - name: Montar el paquete Tizen
+        run: |
+          VERSION=$(grep '^version:' src/pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '[:space:]')
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          PKG=tizen-pkg
+          cp -r src/build/web "$PKG"
+          # La app se carga desde el sistema de ficheros del televisor: rutas relativas.
+          sed -i 's|<base href="/">|<base href="./">|' "$PKG/index.html"
+          cp tizen/tizen-keys.js "$PKG/tizen-keys.js"
+          sed -i 's|<head>|<head>\n  <script src="tizen-keys.js"></script>|' "$PKG/index.html"
+          sed "s/__VERSION__/$VERSION/" tizen/config.xml > "$PKG/config.xml"
+          cp src/web/icons/Icon-512.png "$PKG/icon.png"
+          mkdir -p out
+          (cd "$PKG" && zip -qr "../out/MoonfinCine_Tizen_v${VERSION}_sin-firmar.wgt" .)
+
+      - name: Firmar WGT (opcional, con certificado Samsung)
+        env:
+          TIZEN_AUTHOR_P12: ${{ secrets.TIZEN_AUTHOR_P12_BASE64 }}
+          TIZEN_AUTHOR_PASSWORD: ${{ secrets.TIZEN_AUTHOR_PASSWORD }}
+          TIZEN_DISTRIBUTOR_P12: ${{ secrets.TIZEN_DISTRIBUTOR_P12_BASE64 }}
+          TIZEN_DISTRIBUTOR_PASSWORD: ${{ secrets.TIZEN_DISTRIBUTOR_PASSWORD }}
+        run: |
+          if [ -z "$TIZEN_AUTHOR_P12" ] || [ -z "$TIZEN_DISTRIBUTOR_P12" ]; then
+            echo "Sin certificados Tizen: se publica solo el WGT sin firmar."
+            exit 0
+          fi
+          for V in 5.6 5.5; do
+            URL="https://download.tizen.org/sdk/Installer/tizen-studio_${V}/web-cli_Tizen_Studio_${V}_ubuntu-64.bin"
+            if curl -fsSL -o tizen-cli.bin "$URL"; then break; fi
+          done
+          chmod +x tizen-cli.bin
+          ./tizen-cli.bin --accept-license "$HOME/tizen-studio"
+          export PATH="$HOME/tizen-studio/tools/ide/bin:$PATH"
+          printf '%s' "$TIZEN_AUTHOR_P12" | base64 --decode > author.p12
+          printf '%s' "$TIZEN_DISTRIBUTOR_P12" | base64 --decode > distributor.p12
+          tizen security-profiles add -n cine -a "$PWD/author.p12" -p "$TIZEN_AUTHOR_PASSWORD" \
+            -d "$PWD/distributor.p12" -dp "$TIZEN_DISTRIBUTOR_PASSWORD"
+          tizen package -t wgt -s cine -- "$PWD/tizen-pkg"
+          mv tizen-pkg/*.wgt "out/MoonfinCine_Tizen_v${VERSION}.wgt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tizen
+          path: out/*.wgt
+
+  release:
+    name: Publicar release
+    needs: [android, tizen]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: cine-build-${{ github.run_number }}
+          name: Moonfin Cine – build ${{ github.run_number }}
+          body: |
+            APKs para Android y Android TV, y paquete WGT para televisores Samsung (Tizen).
+            Generado a partir de Moonfin-Core@${{ env.UPSTREAM_REF }} con el parche Cine.
+          files: dist/*
