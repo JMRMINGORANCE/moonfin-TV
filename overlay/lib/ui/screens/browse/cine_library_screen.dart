@@ -1,6 +1,7 @@
-// Moonfin Cine: página de biblioteca (Películas / Series) al estilo de las
-// plataformas de streaming: cabecera destacada, chips "Categorías" y
-// "Ver todo", y filas de novedades, mejor valoradas, sin ver y por género.
+// TaquitoFlix: página de biblioteca (Películas / Series) al estilo de las
+// plataformas de streaming: cabecera con lo último que ha llegado, chips
+// "Categorías" y "Ver todo", y filas ordenadas siempre con lo más reciente
+// primero (novedades, sin ver, mi lista y por género) más las mejor valoradas.
 // Las bibliotecas de otro tipo (música, libros, vídeos caseros…) siguen con
 // la pantalla de Moonfin.
 
@@ -155,16 +156,18 @@ class _CineLibraryScreenState extends State<CineLibraryScreen> {
     }
     if (mounted) setState(() {});
 
+    const newest = 'DateCreated,SortName';
     final results = await Future.wait([
-      _query(sortBy: 'Random', limit: 12),
-      _query(sortBy: 'DateCreated'),
+      _query(sortBy: newest, limit: 12),
+      _query(sortBy: newest),
       _query(sortBy: 'CommunityRating'),
-      _query(sortBy: 'Random', filters: const ['IsUnplayed']),
-      _query(sortBy: 'Random', filters: const ['IsFavorite']),
-      _query(sortBy: 'Random', limit: 300, fields: 'Genres'),
+      _query(sortBy: newest, filters: const ['IsUnplayed']),
+      _query(sortBy: newest, filters: const ['IsFavorite']),
+      _query(sortBy: newest, limit: 300, fields: 'Genres'),
     ]);
     if (!mounted) return;
 
+    // Cabecera: lo último añadido que tenga imagen de fondo.
     final heroPool = results[0];
     _hero = heroPool.firstWhere(
       (i) => i.backdropImageTags.isNotEmpty,
@@ -193,27 +196,26 @@ class _CineLibraryScreenState extends State<CineLibraryScreen> {
       )
       ..add(
         _CineRowData(
-          cineText(context, 'Las más valoradas', 'Top rated'),
-          results[2],
-        ),
-      )
-      ..add(
-        _CineRowData(
           cineText(context, 'Aún no las has visto', 'Not watched yet'),
           results[3],
         ),
       )
       ..add(_CineRowData(cineText(context, 'Mi lista', 'My list'), results[4]));
+    final topRated = _CineRowData(
+      cineText(context, 'Las más valoradas', 'Top rated'),
+      results[2],
+    );
     setState(() => _loading = false);
 
-    // Filas por género, en segundo plano.
+    // Filas por género (lo más reciente primero), en segundo plano.
     for (final entry in topGenres.take(8)) {
-      final items = await _query(sortBy: 'Random', genres: [entry.key]);
+      final items = await _query(sortBy: newest, genres: [entry.key]);
       if (!mounted) return;
       if (items.length >= 4) {
         setState(() => _rows.add(_CineRowData(entry.key, items)));
       }
     }
+    if (mounted) setState(() => _rows.add(topRated));
 
     try {
       final g = await _client.itemsApi.getGenres(
