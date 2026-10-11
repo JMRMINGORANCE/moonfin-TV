@@ -1,0 +1,420 @@
+diff --git a/android/app/build.gradle.kts b/android/app/build.gradle.kts
+index 6dd414e..7daf08c 100644
+--- a/android/app/build.gradle.kts
++++ b/android/app/build.gradle.kts
+@@ -35,7 +35,7 @@ plugins {
+     // push_messaging_service.dart:38 returns unless PlatformDetection.isMobile,
+     // and the initializeApp call is try/caught regardless.
+     id("com.google.gms.google-services")
+-        .apply(System.getenv("MOONFIN_TEST_ID_SUFFIX").isNullOrEmpty())
++        .apply(false) // Cine: no Firebase client for org.moonfin.cine
+     // END: FlutterFire Configuration
+     id("kotlin-android")
+     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+@@ -79,8 +79,8 @@ android {
+ 
+     flavorDimensions += "device"
+     productFlavors {
+-        val baseAppId = "org.moonfin.androidtv"
+-        val baseAppName = "Moonfin"
++        val baseAppId = "org.moonfin.cine"
++        val baseAppName = "Moonfin Cine"
+         // Optional application-id suffix for on-device testing, set through the
+         // environment so an unset build is byte-identical to before:
+         //   MOONFIN_TEST_ID_SUFFIX=.hwtest flutter build apk --flavor androidTv --debug
+diff --git a/lib/l10n/app_es.arb b/lib/l10n/app_es.arb
+index 5708c1b..7b5592c 100644
+--- a/lib/l10n/app_es.arb
++++ b/lib/l10n/app_es.arb
+@@ -6028,7 +6028,7 @@
+         }
+     },
+     "folders": "Carpetas",
+-    "libraries": "Bibliotecas",
++    "libraries": "Mi biblioteca",
+     "syncPlay": "SyncPlay",
+     "seeAll": "Ver todo",
+     "noItems": "No hay elementos",
+diff --git a/lib/l10n/app_es_419.arb b/lib/l10n/app_es_419.arb
+index 6ff0026..d82ee33 100644
+--- a/lib/l10n/app_es_419.arb
++++ b/lib/l10n/app_es_419.arb
+@@ -6114,7 +6114,7 @@
+         }
+     },
+     "folders": "Carpetas",
+-    "libraries": "Bibliotecas",
++    "libraries": "Mi biblioteca",
+     "syncPlay": "SyncPlay",
+     "syncPlayDisabledTitle": "SyncPlay deshabilitado",
+     "syncPlayDisabledMessage": "Habilite SyncPlay en Configuración para usar la reproducción sincronizada.",
+diff --git a/lib/l10n/app_es_AR.arb b/lib/l10n/app_es_AR.arb
+index 61a4193..722f6a6 100644
+--- a/lib/l10n/app_es_AR.arb
++++ b/lib/l10n/app_es_AR.arb
+@@ -6110,7 +6110,7 @@
+         }
+     },
+     "folders": "Carpetas",
+-    "libraries": "Bibliotecas",
++    "libraries": "Mi biblioteca",
+     "syncPlay": "SyncPlay",
+     "syncPlayDisabledTitle": "SyncPlay deshabilitado",
+     "syncPlayDisabledMessage": "Habilite SyncPlay en Configuración para usar la reproducción sincronizada.",
+diff --git a/lib/l10n/app_es_DO.arb b/lib/l10n/app_es_DO.arb
+index 43e86bd..686d844 100644
+--- a/lib/l10n/app_es_DO.arb
++++ b/lib/l10n/app_es_DO.arb
+@@ -6110,7 +6110,7 @@
+         }
+     },
+     "folders": "Carpetas",
+-    "libraries": "Bibliotecas",
++    "libraries": "Mi biblioteca",
+     "syncPlay": "SyncPlay",
+     "syncPlayDisabledTitle": "SyncPlay deshabilitado",
+     "syncPlayDisabledMessage": "Habilite SyncPlay en Configuración para usar la reproducción sincronizada.",
+diff --git a/lib/l10n/app_es_MX.arb b/lib/l10n/app_es_MX.arb
+index e493616..d0c962e 100644
+--- a/lib/l10n/app_es_MX.arb
++++ b/lib/l10n/app_es_MX.arb
+@@ -6110,7 +6110,7 @@
+         }
+     },
+     "folders": "Carpetas",
+-    "libraries": "Bibliotecas",
++    "libraries": "Mi biblioteca",
+     "syncPlay": "SyncPlay",
+     "syncPlayDisabledTitle": "SyncPlay deshabilitado",
+     "syncPlayDisabledMessage": "Habilite SyncPlay en Configuración para usar la reproducción sincronizada.",
+diff --git a/lib/l10n/app_localizations_es.dart b/lib/l10n/app_localizations_es.dart
+index 47bf9f4..5d7d092 100644
+--- a/lib/l10n/app_localizations_es.dart
++++ b/lib/l10n/app_localizations_es.dart
+@@ -9392,7 +9392,7 @@ class AppLocalizationsEs extends AppLocalizations {
+   String get folders => 'Carpetas';
+ 
+   @override
+-  String get libraries => 'Bibliotecas';
++  String get libraries => 'Mi biblioteca';
+ 
+   @override
+   String get syncPlay => 'SyncPlay';
+@@ -20059,7 +20059,7 @@ class AppLocalizationsEs419 extends AppLocalizationsEs {
+   String get folders => 'Carpetas';
+ 
+   @override
+-  String get libraries => 'Bibliotecas';
++  String get libraries => 'Mi biblioteca';
+ 
+   @override
+   String get syncPlay => 'SyncPlay';
+@@ -27669,7 +27669,7 @@ class AppLocalizationsEsAr extends AppLocalizationsEs {
+   String get folders => 'Carpetas';
+ 
+   @override
+-  String get libraries => 'Bibliotecas';
++  String get libraries => 'Mi biblioteca';
+ 
+   @override
+   String get syncPlay => 'SyncPlay';
+@@ -35279,7 +35279,7 @@ class AppLocalizationsEsDo extends AppLocalizationsEs {
+   String get folders => 'Carpetas';
+ 
+   @override
+-  String get libraries => 'Bibliotecas';
++  String get libraries => 'Mi biblioteca';
+ 
+   @override
+   String get syncPlay => 'SyncPlay';
+@@ -42939,7 +42939,7 @@ class AppLocalizationsEsMx extends AppLocalizationsEs {
+   String get folders => 'Carpetas';
+ 
+   @override
+-  String get libraries => 'Bibliotecas';
++  String get libraries => 'Mi biblioteca';
+ 
+   @override
+   String get syncPlay => 'SyncPlay';
+diff --git a/lib/preference/bottom_nav_tabs.dart b/lib/preference/bottom_nav_tabs.dart
+index 1b3cbfb..79c293d 100644
+--- a/lib/preference/bottom_nav_tabs.dart
++++ b/lib/preference/bottom_nav_tabs.dart
+@@ -9,11 +9,11 @@ const int kMaxPinnedBottomNavTabs = 3;
+ 
+ // Libraries sits second so a user on default settings keeps it on the bar.
+ const List<BottomNavTab> _autoOrder = [
+-  BottomNavTab.search,
+   BottomNavTab.libraries,
++  BottomNavTab.discover,
++  BottomNavTab.search,
+   BottomNavTab.favorites,
+   BottomNavTab.liveTv,
+-  BottomNavTab.discover,
+   BottomNavTab.genres,
+   BottomNavTab.folders,
+ ];
+diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
+index 654dc28..69fe0fc 100644
+--- a/lib/preference/user_preferences.dart
++++ b/lib/preference/user_preferences.dart
+@@ -1553,7 +1553,7 @@ class UserPreferences extends ChangeNotifier {
+   /// because it syncs to that server's profile.
+   static final detailScreenStyle = EnumPreference(
+     key: 'pref_detail_screen_style',
+-    defaultValue: DetailScreenStyle.modern,
++    defaultValue: DetailScreenStyle.spotlight,
+     values: DetailScreenStyle.values,
+   );
+ 
+@@ -1789,7 +1789,12 @@ class UserPreferences extends ChangeNotifier {
+ 
+   static final navbarPosition = EnumPreference(
+     key: 'pref_navbar_position',
+-    defaultValue: NavbarPosition.top,
++    // Cine: menú lateral en TV y barra inferior en móvil, como Netflix.
++    defaultValue: PlatformDetection.useLeanbackUi
++        ? NavbarPosition.left
++        : PlatformDetection.useMobileUi && !PlatformDetection.isWeb
++            ? NavbarPosition.bottom
++            : NavbarPosition.top,
+     values: NavbarPosition.values,
+   );
+ 
+@@ -2609,9 +2614,8 @@ class UserPreferences extends ChangeNotifier {
+ 
+   static final mediaBarMode = Preference(
+     key: 'mediaBarMode',
+-    defaultValue: PlatformDetection.useMobileUi
+-        ? mediaBarModeGallery
+-        : mediaBarModeMoonfin,
++    // Cine: full-bleed hero banner on every platform.
++    defaultValue: mediaBarModeBanner,
+   );
+ 
+   static final mediaBarContentType = Preference(
+@@ -2621,7 +2625,7 @@ class UserPreferences extends ChangeNotifier {
+ 
+   static final mediaBarSourceType = Preference(
+     key: 'mediaBarSourceType',
+-    defaultValue: mediaBarSourceRandom,
++    defaultValue: mediaBarSourceRecentlyAdded,
+   );
+ 
+   static final mediaBarItemCount = Preference(
+@@ -2636,7 +2640,7 @@ class UserPreferences extends ChangeNotifier {
+ 
+   static final navbarColor = Preference(
+     key: 'navbarColor',
+-    defaultValue: 'gray',
++    defaultValue: 'black',
+   );
+ 
+   static final mediaBarOverlayOpacity = Preference(
+diff --git a/lib/ui/navigation/app_router.dart b/lib/ui/navigation/app_router.dart
+index 737a511..a65a37c 100644
+--- a/lib/ui/navigation/app_router.dart
++++ b/lib/ui/navigation/app_router.dart
+@@ -27,6 +27,9 @@ import '../screens/browse/collection_screen.dart';
+ import '../screens/browse/favorites_screen.dart';
+ import '../screens/browse/folder_browse_screen.dart';
+ import '../screens/browse/library_browse_screen.dart';
++import '../screens/browse/cine_library_screen.dart';
++import '../screens/seerr/cine_seerr_screen.dart';
++import '../widgets/cine/cine_widgets.dart';
+ import '../screens/browse/library_genres_screen.dart';
+ import '../screens/browse/library_letters_screen.dart';
+ import '../screens/browse/library_suggestions_screen.dart';
+@@ -322,11 +325,20 @@ final appRouter = GoRouter(
+             ?.split(',')
+             .map(Uri.decodeComponent)
+             .toList();
++        final favoritesOnly = state.uri.queryParameters['favorites'] == '1';
++        // Cine: la portada de la biblioteca es la página estilo streaming;
++        // "Ver todo" vuelve aquí con el tipo indicado y abre la rejilla.
++        if (kCineUi && includeItemTypes == null && !favoritesOnly) {
++          return CineLibraryScreen(
++            libraryId: libraryId,
++            serverId: state.uri.queryParameters['serverId'],
++          );
++        }
+         return LibraryBrowseScreen(
+           libraryId: libraryId,
+           serverId: state.uri.queryParameters['serverId'],
+           includeItemTypes: includeItemTypes,
+-          favoritesOnly: state.uri.queryParameters['favorites'] == '1',
++          favoritesOnly: favoritesOnly,
+         );
+       },
+       routes: [
+@@ -805,7 +817,10 @@ final appRouter = GoRouter(
+     // Seerr
+     GoRoute(
+       path: Destinations.seerrDiscover,
+-      builder: (context, state) => const SeerrDiscoverScreen(),
++      builder: (context, state) =>
++          kCineUi && state.uri.queryParameters['classic'] != '1'
++              ? const CineSeerrScreen()
++              : const SeerrDiscoverScreen(),
+     ),
+     GoRoute(
+       path: Destinations.seerrRequests,
+diff --git a/lib/ui/screens/detail/item_detail_screen.dart b/lib/ui/screens/detail/item_detail_screen.dart
+index ecb75f7..39684e8 100644
+--- a/lib/ui/screens/detail/item_detail_screen.dart
++++ b/lib/ui/screens/detail/item_detail_screen.dart
+@@ -47,6 +47,7 @@ import '../../../preference/detail_section_layout.dart';
+ import 'upcoming_episode_badge.dart';
+ import 'detail_episode_images.dart';
+ import 'minimalist/minimalist_detail_content.dart';
++import 'cine/cine_detail_content.dart';
+ import 'nouveau/nouveau_detail_content.dart';
+ import 'nouveau/hero/nouveau_action_buttons.dart';
+ import 'modern/modern_detail_content.dart';
+@@ -803,6 +804,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen>
+           ],
+         ),
+       ),
++      ItemDetailState.ready when CineDetailContent.supports(_viewModel) =>
++        CineDetailContent(
++          viewModel: _viewModel,
++          prefs: _prefs,
++          selectedMediaSourceId: _selectedMediaSourceId,
++          initialFocusNode: _ensureInitialFocusNode(),
++          onSelectedMediaSourceChanged: (id) {
++            setState(() => _selectedMediaSourceId = id);
++            _viewModel.load(mediaSourceId: id);
++          },
++          autoPlay: widget.autoPlay,
++          actionsExpanded: _actionsExpanded,
++          onActionsExpandedChanged: (val) =>
++              setState(() => _actionsExpanded = val),
++        ),
+       ItemDetailState.ready => switch (_prefs.effectiveDetailScreenStyle) {
+         DetailScreenStyle.classic => _DetailContent(
+           viewModel: _viewModel,
+diff --git a/lib/ui/screens/home/home_screen.dart b/lib/ui/screens/home/home_screen.dart
+index b764fb4..b91ebda 100644
+--- a/lib/ui/screens/home/home_screen.dart
++++ b/lib/ui/screens/home/home_screen.dart
+@@ -87,6 +87,9 @@ import 'home_view_model.dart';
+ import '../../widgets/seerr/seerr_genre_label.dart';
+ import '../../widgets/skeleton/skeleton_home_row.dart';
+ import '../../widgets/skeleton/skeleton_shimmer.dart';
++import '../../widgets/cine/cine_widgets.dart';
++
++part 'cine_home.dart';
+ 
+ Color get _homeBackground => AppColorScheme.background;
+ 
+@@ -536,10 +539,12 @@ class _HomeShellState extends State<_HomeShell>
+         _showExitConfirmation(context);
+       },
+       child: Scaffold(
+-        backgroundColor: _homeBackground,
++        backgroundColor: kCineHomeLayout ? _cineBg : _homeBackground,
+         body: NavigationLayout(
+           activeRoute: Destinations.home,
+-          child: QuickReturnWrapper(
++          child: kCineHomeLayout
++              ? _CineHome(viewModel: _viewModel, prefs: _userPrefs)
++              : QuickReturnWrapper(
+             isAtStart: _isScrolledToTopNotifier,
+             onReturn: () => _contentRowsKey.currentState?.returnToTop(),
+             child: Stack(
+diff --git a/lib/ui/theme/app_theme_controller.dart b/lib/ui/theme/app_theme_controller.dart
+index ae3e265..ee709bb 100644
+--- a/lib/ui/theme/app_theme_controller.dart
++++ b/lib/ui/theme/app_theme_controller.dart
+@@ -52,7 +52,7 @@ class AppThemeController extends ChangeNotifier {
+ 
+   static AppTheme _defaultFocusColorForTheme(VisualThemeId themeId) {
+     return switch (themeId) {
+-      VisualThemeId.moonfin => AppTheme.moonfinCyan,
++      VisualThemeId.moonfin => AppTheme.white,
+       VisualThemeId.neonPulse => AppTheme.neonPulseMagenta,
+       VisualThemeId.glass => AppTheme.white,
+       VisualThemeId.eightbitHero => AppTheme.eightBitGold,
+diff --git a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart b/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
+index 1006910..549abdd 100644
+--- a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
++++ b/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
+@@ -5,45 +5,45 @@ import '../theme_spec.dart';
+ 
+ const moonfinThemeSpec = ThemeSpec(
+   id: 'moonfin',
+-  displayName: 'Moonfin',
++  displayName: 'Cine',
+   colors: ThemeColorTokens(
+-    background: AppColors.black700,
++    background: Color(0xFF000000),
+     onBackground: AppColors.white,
+-    surface: AppColors.black500,
++    surface: Color(0xFF141414),
+     onSurface: AppColors.white,
+-    surfaceVariant: Color(0xFF252525),
++    surfaceVariant: Color(0xFF232323),
+     scrim: Color(0xCC000000),
+-    accent: AppColors.cyan500,
++    accent: Color(0xFFE50914),
+     onAccent: AppColors.white,
+-    buttonNormal: Color(0xFF2A2A2A),
++    buttonNormal: Color(0x996D6D6E),
+     buttonFocused: AppColors.white,
+     buttonDisabled: Color(0xFF1E1E1E),
+     buttonActive: Color(0xFF3A3A3A),
+     onButtonNormal: AppColors.white,
+-    onButtonFocused: AppColors.cyan500,
++    onButtonFocused: Color(0xFF000000),
+     onButtonDisabled: Color(0xFF666666),
+     inputBackground: Color(0xFF2A2A2A),
+     inputFocused: Color(0xFF3A3A3A),
+     inputBorder: Color(0xFF404040),
+-    inputBorderFocused: AppColors.cyan500,
++    inputBorderFocused: Color(0xFFE50914),
+     rangeTrack: Color(0xFF404040),
+-    rangeProgress: AppColors.cyan500,
+-    rangeThumb: AppColors.cyan500,
++    rangeProgress: Color(0xFFE50914),
++    rangeThumb: Color(0xFFE50914),
+     seekbarBuffered: Color(0x80FFFFFF),
+-    badgeBackground: AppColors.cyan500,
++    badgeBackground: Color(0xFFE50914),
+     onBadge: AppColors.white,
+-    badgeUnplayed: AppColors.cyan500,
+-    badgeWatched: AppColors.green500,
++    badgeUnplayed: Color(0xFFE50914),
++    badgeWatched: Color(0xFFE50914),
+     recordingActive: AppColors.red500,
+     recordingScheduled: AppColors.orange500,
+   ),
+   borders: ThemeBorderTokens(
+     cardBorder: BorderSide(color: Colors.transparent),
+-    chipBorder: BorderSide(color: Color(0x558EC8F0)),
+-    focusBorder: BorderSide(color: AppColors.cyan500, width: 2),
+-    cardRadius: BorderRadius.all(Radius.circular(8)),
+-    chipRadius: BorderRadius.all(Radius.circular(999)),
+-    chipBackground: Color(0x1F8EC8F0),
++    chipBorder: BorderSide(color: Color(0x55FFFFFF)),
++    focusBorder: BorderSide(color: Color(0xFFFFFFFF), width: 3),
++    cardRadius: BorderRadius.all(Radius.circular(4)),
++    chipRadius: BorderRadius.all(Radius.circular(4)),
++    chipBackground: Color(0x1FFFFFFF),
+     focusGlow: [],
+   ),
+ );
+diff --git a/web/manifest.json b/web/manifest.json
+index a117ef9..f0d3b90 100644
+--- a/web/manifest.json
++++ b/web/manifest.json
+@@ -4,8 +4,8 @@
+     "start_url": ".",
+     "display": "standalone",
+     "display_override": ["standalone", "window-controls-overlay"],
+-    "background_color": "#101010",
+-    "theme_color": "#00A4DC",
++    "background_color": "#000000",
++    "theme_color": "#E50914",
+     "description": "Moonfin web client for self-hosted media servers",
+     "orientation": "portrait-primary",
+     "prefer_related_applications": false,
