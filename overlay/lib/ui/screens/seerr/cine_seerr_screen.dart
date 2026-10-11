@@ -1,8 +1,10 @@
-// Moonfin Cine: sección Seerr al estilo "Novedades" de las plataformas de
-// streaming. Cabecera con la tendencia del momento y filas de tendencias,
-// populares y próximos estrenos. Cada carátula indica si ya está disponible en
-// tu servidor o si está solicitada. Al abrir un título se muestra la ficha de
-// Seerr de Moonfin, desde donde se solicita.
+// TaquitoFlix: sección Seerr al estilo de las plataformas de streaming.
+//
+// Muestra directamente todas las categorías del explorador de Seerr (las
+// mismas que "Explorar más": tendencias, populares, próximos estrenos, géneros
+// de películas y series, estudios, cadenas, lista de seguimiento y las filas
+// que el administrador haya creado en Seerr), sin solicitudes ni problemas:
+// con la aprobación automática basta con pulsar "Descargar".
 
 import 'dart:async';
 
@@ -10,10 +12,15 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../data/repositories/seerr_repository.dart';
 import '../../../data/services/seerr/seerr_api_models.dart';
+import '../../../data/viewmodels/seerr_discover_view_model.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../preference/preference_constants.dart';
 import '../../../util/platform_detection.dart';
+import '../../../util/seerr_genre_art.dart';
 import '../../navigation/destinations.dart';
+import '../../util/home_row_title_localizer.dart';
+import '../../widgets/bounded_network_image.dart';
 import '../../widgets/cine/cine_widgets.dart';
 import '../../widgets/navigation_layout.dart';
 
@@ -24,22 +31,12 @@ class CineSeerrScreen extends StatefulWidget {
   State<CineSeerrScreen> createState() => _CineSeerrScreenState();
 }
 
-class _SeerrRow {
-  final String title;
-  final List<SeerrDiscoverItem> items;
-  const _SeerrRow(this.title, this.items);
-}
-
 class _CineSeerrScreenState extends State<CineSeerrScreen> {
   final ScrollController _scroll = ScrollController();
   final ValueNotifier<double> _scrollOffset = ValueNotifier(0);
   final FocusNode _heroPrimary = FocusNode(debugLabel: 'cine_seerr_hero');
   VoidCallback? _previousFocusContent;
-
-  bool _loading = true;
-  Object? _error;
-  SeerrDiscoverItem? _hero;
-  final List<_SeerrRow> _rows = [];
+  SeerrDiscoverViewModel? _vm;
 
   @override
   void initState() {
@@ -50,11 +47,24 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
     _previousFocusContent =
         NavigationLayout.focusContentFromNavbarNotifier.value;
     NavigationLayout.focusContentFromNavbarNotifier.value = _focusContent;
-    unawaited(_load());
+    unawaited(_init());
+  }
+
+  Future<void> _init() async {
+    final vm = await GetIt.instance.getAsync<SeerrDiscoverViewModel>();
+    if (!mounted) return;
+    vm.addListener(_onChanged);
+    setState(() => _vm = vm);
+    unawaited(vm.load());
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _vm?.removeListener(_onChanged);
     if (identical(
       NavigationLayout.focusContentFromNavbarNotifier.value,
       _focusContent,
@@ -73,63 +83,25 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
     if (_heroPrimary.context != null) _heroPrimary.requestFocus();
   }
 
-  Future<List<SeerrDiscoverItem>> _safe(
-    Future<SeerrDiscoverPage> Function() f,
-  ) async {
-    try {
-      final page = await f();
-      return page.results
-          .where((i) => i.mediaType != 'person')
-          .toList(growable: false);
-    } catch (_) {
-      return const [];
-    }
-  }
+  // -- datos ---------------------------------------------------------------
 
-  Future<void> _load() async {
-    try {
-      final repo = await GetIt.instance.getAsync<SeerrRepository>();
-      await repo.ensureInitialized();
-      final results = await Future.wait([
-        _safe(() => repo.getTrending()),
-        _safe(() => repo.getTrendingMovies()),
-        _safe(() => repo.getTrendingTv()),
-        _safe(() => repo.getUpcomingMovies()),
-        _safe(() => repo.getUpcomingTv()),
-        _safe(() => repo.getTopMovies()),
-        _safe(() => repo.getTopTv()),
-        _safe(() => repo.getWatchlist()),
-      ]);
-      if (!mounted) return;
-      final trending = results[0];
-      _hero = trending.firstWhere(
-        (i) => (i.backdropPath ?? '').isNotEmpty,
-        orElse: () => trending.isNotEmpty
-            ? trending.first
-            : const SeerrDiscoverItem(id: -1),
-      );
-      if (_hero!.id < 0) _hero = null;
+  static bool _hidden(SeerrDiscoverRow row) =>
+      row.type == SeerrRowType.shortcuts ||
+      row.type == SeerrRowType.recentRequests;
 
-      String t(String es, String en) => cineText(context, es, en);
-      _rows
-        ..clear()
-        ..add(_SeerrRow(t('Tendencias ahora', 'Trending now'), trending))
-        ..add(_SeerrRow(t('Películas del momento', 'Popular movies'), results[1]))
-        ..add(_SeerrRow(t('Series del momento', 'Popular series'), results[2]))
-        ..add(_SeerrRow(t('Próximos estrenos', 'Coming soon'), results[3]))
-        ..add(_SeerrRow(t('Próximas series', 'Upcoming series'), results[4]))
-        ..add(_SeerrRow(t('Películas más valoradas', 'Top rated movies'), results[5]))
-        ..add(_SeerrRow(t('Series más valoradas', 'Top rated series'), results[6]))
-        ..add(_SeerrRow(t('Mi lista de seguimiento', 'My watchlist'), results[7]));
-      setState(() => _loading = false);
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _error = e;
-        });
+  SeerrDiscoverItem? _pickHero(List<SeerrDiscoverRow> rows) {
+    SeerrDiscoverItem? fallback;
+    for (final row in rows) {
+      if (!row.isMediaRow || _hidden(row)) continue;
+      for (final item in row.items) {
+        if (item.mediaType == 'person') continue;
+        if ((item.backdropPath ?? '').isNotEmpty) {
+          if (row.type == SeerrRowType.trending) return item;
+          fallback ??= item;
+        }
       }
     }
+    return fallback;
   }
 
   String _title(SeerrDiscoverItem i) =>
@@ -148,6 +120,24 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
         ),
       );
 
+  void _browse({
+    required String filterType,
+    required int id,
+    required String name,
+    required String mediaType,
+  }) {
+    final uri = Uri(
+      path: Destinations.seerrBrowse,
+      queryParameters: {
+        'filterId': id.toString(),
+        'filterName': name,
+        'mediaType': mediaType,
+        'filterType': filterType,
+      },
+    );
+    context.push(uri.toString());
+  }
+
   CineTile _tile(SeerrDiscoverItem i) {
     final status = i.mediaInfo?.status;
     String? badge;
@@ -159,7 +149,7 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
       badge = cineText(context, 'PARCIAL', 'PARTIAL');
       color = const Color(0xFF2C7BE5);
     } else if (status == 2 || status == 3) {
-      badge = cineText(context, 'SOLICITADO', 'REQUESTED');
+      badge = cineText(context, 'DESCARGANDO', 'DOWNLOADING');
       color = const Color(0xFFD08A00);
     }
     return CineTile(
@@ -172,28 +162,116 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
     );
   }
 
+  Widget _buildRow(
+    BuildContext context,
+    SeerrDiscoverRow row,
+    int index,
+    AppLocalizations l10n,
+  ) {
+    final title = row.slider?.title ?? localizeSeerrRowTitle(row.type!, l10n);
+
+    if (row.isGenreRow) {
+      final mediaType = row.type == SeerrRowType.movieGenres ? 'movie' : 'tv';
+      return _CineCategoryRow(
+        key: ValueKey('cine_seerr_${row.key}'),
+        title: title,
+        items: [
+          for (final g in row.genres)
+            _CategoryItem(
+              label: g.name,
+              imageUrl: seerrGenreBackdropUrl(g.id, g.backdrops),
+              onTap: () => _browse(
+                filterType: 'genre',
+                id: g.id,
+                name: g.name,
+                mediaType: mediaType,
+              ),
+            ),
+        ],
+      );
+    }
+    if (row.isNetworkRow) {
+      return _CineCategoryRow(
+        key: ValueKey('cine_seerr_${row.key}'),
+        title: title,
+        logos: true,
+        items: [
+          for (final n in row.networks)
+            _CategoryItem(
+              label: n.name,
+              imageUrl: n.logoPath == null
+                  ? null
+                  : cineTmdbImage(n.logoPath, 500),
+              onTap: () => _browse(
+                filterType: 'network',
+                id: n.id,
+                name: n.name,
+                mediaType: 'tv',
+              ),
+            ),
+        ],
+      );
+    }
+    if (row.isStudioRow) {
+      return _CineCategoryRow(
+        key: ValueKey('cine_seerr_${row.key}'),
+        title: title,
+        logos: true,
+        items: [
+          for (final s in row.studios)
+            _CategoryItem(
+              label: s.name,
+              imageUrl: s.logoPath == null
+                  ? null
+                  : cineTmdbImage(s.logoPath, 500),
+              onTap: () => _browse(
+                filterType: 'studio',
+                id: s.id,
+                name: s.name,
+                mediaType: 'movie',
+              ),
+            ),
+        ],
+      );
+    }
+    final items =
+        row.items.where((i) => i.mediaType != 'person').toList(growable: false);
+    return CineRow(
+      key: ValueKey('cine_seerr_${row.key}'),
+      title: title,
+      tiles: [for (final i in items) _tile(i)],
+      onNearEnd: row.hasMore && !row.isLoading
+          ? () {
+              final vm = _vm;
+              if (vm != null) unawaited(vm.loadMore(index));
+            }
+          : null,
+    );
+  }
+
+  // -- construcción --------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final mobile = PlatformDetection.useMobileUi;
-    final hero = _hero;
-    final upEdge = cineFocusNavbar;
     final leftEdge = cineNavbarIsLeft ? cineFocusNavbar : null;
-
-    final chips = <Widget>[
-      CineChip(
-        label: cineText(context, 'Mis solicitudes', 'My requests'),
-        onUpEdge: upEdge,
-        onLeftEdge: leftEdge,
-        onTap: () => context.push(Destinations.seerrRequests),
-      ),
-      CineChip(
-        label: cineText(context, 'Explorar más', 'Explore more'),
-        onUpEdge: upEdge,
-        onTap: () => context.push('${Destinations.seerrDiscover}?classic=1'),
-      ),
-    ];
-
+    final vm = _vm;
+    final rows = vm?.rows ?? const <SeerrDiscoverRow>[];
+    final hero = _pickHero(rows);
     final available = hero?.mediaInfo?.status == 5;
+    final loading = vm == null || (vm.isLoading && rows.isEmpty);
+    final error = vm?.error;
+
+    final rowWidgets = <Widget>[
+      for (var i = 0; i < rows.length; i++)
+        if (!_hidden(rows[i]) &&
+            (rows[i].items.isNotEmpty ||
+                rows[i].genres.isNotEmpty ||
+                rows[i].networks.isNotEmpty ||
+                rows[i].studios.isNotEmpty))
+          _buildRow(context, rows[i], i, l10n),
+    ];
 
     final content = CustomScrollView(
       controller: _scroll,
@@ -207,20 +285,14 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
                 24,
                 0,
               ),
-              child: Row(
-                children: [
-                  cinePageTitle(context, 'Seerr'),
-                  const SizedBox(width: 24),
-                  ...chips,
-                ],
-              ),
+              child: cinePageTitle(context, 'Seerr'),
             ),
           ),
         SliverToBoxAdapter(
           child: hero == null
-              ? SizedBox(height: mobile ? 120 : 40)
+              ? SizedBox(height: mobile ? 110 : 40)
               : CineHero(
-                  mobileTopInset: 96,
+                  mobileTopInset: 64,
                   data: CineHeroData(
                     title: _title(hero),
                     overview: hero.overview,
@@ -237,19 +309,18 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
                     ].where((s) => s.isNotEmpty).join('  •  '),
                   ),
                   buttons: (expand) {
-                    final primaryLabel = available
-                        ? cineText(context, 'Ver ahora', 'Watch now')
-                        : cineText(context, 'Solicitar', 'Request');
-                    final primaryIcon = available
-                        ? Icons.play_arrow_rounded
-                        : Icons.add_rounded;
                     final primary = CineButton(
                       focusNode: _heroPrimary,
                       autofocus: !mobile,
-                      icon: primaryIcon,
-                      label: primaryLabel,
+                      icon: available
+                          ? Icons.play_arrow_rounded
+                          : Icons.download_rounded,
+                      label: available
+                          ? cineText(context, 'Ver ahora', 'Watch now')
+                          : cineText(context, 'Descargar', 'Download'),
                       primary: true,
                       expand: expand,
+                      onUpEdge: cineFocusNavbar,
                       onLeftEdge: leftEdge,
                       onTap: () => _open(hero),
                     );
@@ -260,6 +331,7 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
                           : cineText(context, 'Más información', 'More info'),
                       primary: false,
                       expand: expand,
+                      onUpEdge: cineFocusNavbar,
                       onTap: () => _open(hero),
                     );
                     return expand
@@ -272,14 +344,14 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
                   },
                 ),
         ),
-        if (_loading)
+        if (loading)
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.all(48),
               child: Center(child: CircularProgressIndicator(color: cineRed)),
             ),
           ),
-        if (_error != null)
+        if (!loading && error != null && rows.isEmpty)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(48),
@@ -294,17 +366,7 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
               ),
             ),
           ),
-        SliverList(
-          delegate: SliverChildListDelegate([
-            for (final row in _rows)
-              if (row.items.isNotEmpty)
-                CineRow(
-                  key: ValueKey('cine_seerr_${row.title}'),
-                  title: row.title,
-                  tiles: [for (final i in row.items) _tile(i)],
-                ),
-          ]),
-        ),
+        SliverList(delegate: SliverChildListDelegate(rowWidgets)),
         SliverToBoxAdapter(child: SizedBox(height: mobile ? 120 : 80)),
       ],
     );
@@ -328,7 +390,7 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
                     padding: const EdgeInsets.only(left: 56, top: 6),
                     child: cinePageTitle(context, 'Seerr'),
                   ),
-                  chips: chips,
+                  chips: const [],
                 ),
               ),
           ],
@@ -336,4 +398,144 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
       ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Filas de categorías (géneros con imagen, estudios y cadenas con logotipo)
+// ---------------------------------------------------------------------------
+
+class _CategoryItem {
+  final String label;
+  final String? imageUrl;
+  final VoidCallback onTap;
+
+  const _CategoryItem({
+    required this.label,
+    required this.imageUrl,
+    required this.onTap,
+  });
+}
+
+class _CineCategoryRow extends StatelessWidget {
+  final String title;
+  final List<_CategoryItem> items;
+  final bool logos;
+
+  const _CineCategoryRow({
+    super.key,
+    required this.title,
+    required this.items,
+    this.logos = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    final tv = cineIsTv;
+    final w = cinePosterWidth(context) * 1.75;
+    final h = w * (logos ? 0.5 : 9 / 16);
+    final pad = cineSidePadding(context);
+    final leftEdge = cineNavbarIsLeft ? cineFocusNavbar : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        cineSectionTitle(context, title),
+        SizedBox(
+          height: h + 24,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            padding: EdgeInsets.symmetric(horizontal: pad, vertical: 8),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final url = item.imageUrl;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: CineFocusable(
+                  onActivate: item.onTap,
+                  onLeftEdge: index == 0 ? leftEdge : null,
+                  builder: (context, focused) => AnimatedScale(
+                    scale: tv && focused ? 1.08 : 1.0,
+                    duration: const Duration(milliseconds: 140),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 140),
+                      width: w,
+                      height: h,
+                      decoration: BoxDecoration(
+                        color: logos ? const Color(0xFF1C1C1C) : cineCardBg,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: tv && focused
+                              ? Colors.white
+                              : (logos
+                                  ? const Color(0xFF2E2E2E)
+                                  : Colors.transparent),
+                          width: tv && focused ? 3 : 1,
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: logos
+                          ? Padding(
+                              padding: EdgeInsets.all(h * 0.2),
+                              child: url == null
+                                  ? _label(item.label, tv)
+                                  : BoundedNetworkImage(
+                                      imageUrl: url,
+                                      fit: BoxFit.contain,
+                                      minWidth: 200,
+                                      maxWidth: 500,
+                                      errorBuilder: (_, _, _) =>
+                                          _label(item.label, tv),
+                                    ),
+                            )
+                          : Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                if (url != null)
+                                  BoundedNetworkImage(
+                                    imageUrl: url,
+                                    fit: BoxFit.cover,
+                                    minWidth: 320,
+                                    maxWidth: 780,
+                                    errorBuilder: (_, _, _) =>
+                                        const SizedBox.shrink(),
+                                  ),
+                                const DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Color(0x40000000),
+                                  ),
+                                ),
+                                _label(item.label, tv),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _label(String text, bool tv) => Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: tv ? 22 : 16,
+              fontWeight: FontWeight.w800,
+              shadows: const [Shadow(blurRadius: 8, color: Colors.black)],
+            ),
+          ),
+        ),
+      );
 }
