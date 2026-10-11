@@ -1,4 +1,4 @@
-name: Build Moonfin Cine (Android, Android TV, Tizen)
+name: Build TaquitoFlix (Android, Android TV, Tizen)
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Descargar Moonfin y aplicar el parche Cine
+      - name: Descargar el código base y aplicar el parche
         run: |
           git init -q src && cd src
           git remote add origin "$UPSTREAM_REPO"
@@ -30,6 +30,13 @@ jobs:
           git checkout -q FETCH_HEAD
           git apply --whitespace=nowarn ../patches/*.patch
           cp -r ../overlay/. .
+
+      - name: Marca TaquitoFlix (textos, iconos y logos)
+        working-directory: src
+        run: |
+          sudo apt-get install -y -qq libcairo2 > /dev/null
+          python3 -m pip install --quiet cairosvg pillow
+          python3 ../branding/rebrand.py
 
       - uses: actions/setup-java@v4
         with:
@@ -77,8 +84,8 @@ jobs:
             --dart-define=MOONFIN_FORCE_TV=true \
             --dart-define=DISTRIBUTION_CHANNEL=android_tv_apk
           mkdir -p ../out
-          cp build/app/outputs/flutter-apk/app-mobile-release.apk "../out/MoonfinCine_Android_v${VERSION}.apk"
-          cp build/app/outputs/flutter-apk/app-androidtv-release.apk "../out/MoonfinCine_AndroidTV_v${TV_VERSION}.apk"
+          cp build/app/outputs/flutter-apk/app-mobile-release.apk "../out/TaquitoFlix_Android_v${VERSION}.apk"
+          cp build/app/outputs/flutter-apk/app-androidtv-release.apk "../out/TaquitoFlix_AndroidTV_v${TV_VERSION}.apk"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -91,7 +98,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Descargar Moonfin y aplicar el parche Cine
+      - name: Descargar el código base y aplicar el parche
         run: |
           git init -q src && cd src
           git remote add origin "$UPSTREAM_REPO"
@@ -99,6 +106,13 @@ jobs:
           git checkout -q FETCH_HEAD
           git apply --whitespace=nowarn ../patches/*.patch
           cp -r ../overlay/. .
+
+      - name: Marca TaquitoFlix (textos, iconos y logos)
+        working-directory: src
+        run: |
+          sudo apt-get install -y -qq libcairo2 > /dev/null
+          python3 -m pip install --quiet cairosvg pillow
+          python3 ../branding/rebrand.py
 
       - uses: subosito/flutter-action@v2
         with:
@@ -127,7 +141,7 @@ jobs:
           sed "s/__VERSION__/$VERSION/" tizen/config.xml > "$PKG/config.xml"
           cp src/web/icons/Icon-512.png "$PKG/icon.png"
           mkdir -p out
-          (cd "$PKG" && zip -qr "../out/MoonfinCine_Tizen_v${VERSION}_sin-firmar.wgt" .)
+          (cd "$PKG" && zip -qr "../out/TaquitoFlix_Tizen_v${VERSION}_sin-firmar.wgt" .)
 
       - name: Firmar WGT (opcional, con certificado Samsung)
         env:
@@ -152,7 +166,7 @@ jobs:
           tizen security-profiles add -n cine -a "$PWD/author.p12" -p "$TIZEN_AUTHOR_PASSWORD" \
             -d "$PWD/distributor.p12" -dp "$TIZEN_DISTRIBUTOR_PASSWORD"
           tizen package -t wgt -s cine -- "$PWD/tizen-pkg"
-          mv tizen-pkg/*.wgt "out/MoonfinCine_Tizen_v${VERSION}.wgt"
+          mv tizen-pkg/*.wgt "out/TaquitoFlix_Tizen_v${VERSION}.wgt"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -170,9 +184,9 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: cine-build-${{ github.run_number }}
-          name: Moonfin Cine – build ${{ github.run_number }}
+          tag_name: taquitoflix-build-${{ github.run_number }}
+          name: TaquitoFlix – build ${{ github.run_number }}
           body: |
             APKs para Android y Android TV, y paquete WGT para televisores Samsung (Tizen).
-            Generado a partir de Moonfin-Core@${{ env.UPSTREAM_REF }} con el parche Cine.
+            Basado en Moonfin-Core@${{ env.UPSTREAM_REF }} (GPL-2.0).
           files: dist/*
