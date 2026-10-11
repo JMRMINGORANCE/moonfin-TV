@@ -1,5 +1,5 @@
 diff --git a/android/app/build.gradle.kts b/android/app/build.gradle.kts
-index 6dd414e..7daf08c 100644
+index 6dd414e..bd9ec5a 100644
 --- a/android/app/build.gradle.kts
 +++ b/android/app/build.gradle.kts
 @@ -35,7 +35,7 @@ plugins {
@@ -7,7 +7,7 @@ index 6dd414e..7daf08c 100644
      // and the initializeApp call is try/caught regardless.
      id("com.google.gms.google-services")
 -        .apply(System.getenv("MOONFIN_TEST_ID_SUFFIX").isNullOrEmpty())
-+        .apply(false) // Cine: no Firebase client for org.moonfin.cine
++        .apply(false) // TaquitoFlix: sin cliente Firebase para este id
      // END: FlutterFire Configuration
      id("kotlin-android")
      // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -17,11 +17,120 @@ index 6dd414e..7daf08c 100644
      productFlavors {
 -        val baseAppId = "org.moonfin.androidtv"
 -        val baseAppName = "Moonfin"
-+        val baseAppId = "org.moonfin.cine"
-+        val baseAppName = "Moonfin Cine"
++        val baseAppId = "es.josemingorance.taquitoflix"
++        val baseAppName = "TaquitoFlix"
          // Optional application-id suffix for on-device testing, set through the
          // environment so an unset build is byte-identical to before:
          //   MOONFIN_TEST_ID_SUFFIX=.hwtest flutter build apk --flavor androidTv --debug
+diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
+index d7552fc..f94ea4e 100644
+--- a/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
++++ b/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
+@@ -183,7 +183,7 @@ class DlnaController(private val context: Context) {
+     fun playToDevice(args: Map<*, *>, result: MethodChannel.Result) {
+         val targetId = args["targetId"] as? String
+         val streamUrl = args["streamUrl"] as? String
+-        val title = args["title"] as? String ?: "Moonfin"
++        val title = args["title"] as? String ?: "TaquitoFlix"
+         val startTicks = (args["startPositionTicks"] as? Number)?.toLong()
+ 
+         if (targetId.isNullOrEmpty() || streamUrl.isNullOrEmpty()) {
+diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
+index d1293d6..7868f48 100644
+--- a/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
++++ b/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
+@@ -1261,7 +1261,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
+         val targetId = args["targetId"] as? String
+         val streamUrl = args["streamUrl"] as? String
+         val contentType = args["contentType"] as? String
+-        val title = args["title"] as? String ?: "Moonfin"
++        val title = args["title"] as? String ?: "TaquitoFlix"
+         val subtitle = args["subtitle"] as? String
+         val posterUrl = args["posterUrl"] as? String
+         val queueItems = parseQueueItems(args["queueItems"])
+@@ -1465,7 +1465,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
+         return entries.mapNotNull { entry ->
+             val map = entry as? Map<*, *> ?: return@mapNotNull null
+             val streamUrl = map["streamUrl"] as? String ?: return@mapNotNull null
+-            val title = map["title"] as? String ?: "Moonfin"
++            val title = map["title"] as? String ?: "TaquitoFlix"
+             buildMap<String, Any> {
+                 put("streamUrl", streamUrl)
+                 put("title", title)
+@@ -1513,7 +1513,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
+         val mediaInfo = buildMediaInfo(
+             streamUrl = url,
+             contentType = contentType,
+-            title = title ?: "Moonfin",
++            title = title ?: "TaquitoFlix",
+             subtitle = subtitle,
+             posterUrl = posterUrl,
+         )
+diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt
+index a37db9d..73e7d17 100644
+--- a/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt
++++ b/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt
+@@ -13,7 +13,7 @@ class MediaStoreHelper(private val context: Context) : MethodChannel.MethodCallH
+ 
+     companion object {
+         const val CHANNEL = "com.moonfin/media_store"
+-        private const val SUBFOLDER = "Moonfin"
++        private const val SUBFOLDER = "TaquitoFlix"
+     }
+ 
+     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
+diff --git a/lib/data/services/app_update_service.dart b/lib/data/services/app_update_service.dart
+index fdaa6db..8c6fafd 100644
+--- a/lib/data/services/app_update_service.dart
++++ b/lib/data/services/app_update_service.dart
+@@ -47,7 +47,7 @@ class AppUpdateService {
+   AppUpdateService(this._store, this._userPreferences);
+ 
+   static const _latestReleaseHost = 'api.github.com';
+-  static const _latestReleasePath = '/repos/Moonfin-Client/Moonfin-Core/releases/latest';
++  static const _latestReleasePath = '/repos/JMRMINGORANCE/moonfin-TV/releases/latest';
+   static const _checkCooldown = Duration(hours: 24);
+ 
+   static const _lastCheckMsKey = 'app_update_last_check_ms';
+@@ -228,7 +228,7 @@ class AppUpdateService {
+       }
+ 
+       final htmlUrl = decoded['html_url']?.toString() ??
+-          'https://github.com/Moonfin-Client/Moonfin-Core/releases/latest';
++          'https://github.com/JMRMINGORANCE/moonfin-TV/releases/latest';
+ 
+       final assetsJson = decoded['assets'];
+       final assets = <_ReleaseAsset>[];
+diff --git a/lib/data/services/media_store_service.dart b/lib/data/services/media_store_service.dart
+index 5cce0e8..b87aa57 100644
+--- a/lib/data/services/media_store_service.dart
++++ b/lib/data/services/media_store_service.dart
+@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
+ class MediaStoreService {
+   static const _channel = MethodChannel('com.moonfin/media_store');
+ 
+-  /// Returns the base path for MediaStore downloads: `/storage/emulated/0/Download/Moonfin`
++  /// Returns the base path for MediaStore downloads: `/storage/emulated/0/Download/TaquitoFlix`
+   static Future<String> getMediaStorePath() async {
+     final path = await _channel.invokeMethod<String>('getMediaStorePath');
+     return path!;
+diff --git a/lib/data/viewmodels/library_browse_view_model.dart b/lib/data/viewmodels/library_browse_view_model.dart
+index 5036d73..a44a56c 100644
+--- a/lib/data/viewmodels/library_browse_view_model.dart
++++ b/lib/data/viewmodels/library_browse_view_model.dart
+@@ -421,8 +421,10 @@ class LibraryBrowseViewModel extends ChangeNotifier {
+   }) : _client = client,
+        _prefs = prefs,
+        _mdbListRepository = mdbListRepository {
+-    _sortBy = _prefs.get(UserPreferences.librarySortBy(_prefKey));
+-    _sortDirection = _prefs.get(UserPreferences.librarySortDirection(_prefKey));
++    // TaquitoFlix: las bibliotecas siempre se abren con lo último añadido
++    // primero; el orden elegido a mano dura mientras la pantalla está abierta.
++    _sortBy = LibrarySortBy.dateAdded;
++    _sortDirection = SortDirection.descending;
+     _playedFilter = _prefs.get(UserPreferences.libraryPlayedFilter(_prefKey));
+     _likedFilter = _prefs.get(UserPreferences.libraryLikedFilter(_prefKey));
+     _seriesFilter = _prefs.get(UserPreferences.librarySeriesFilter(_prefKey));
 diff --git a/lib/l10n/app_es.arb b/lib/l10n/app_es.arb
 index 5708c1b..7b5592c 100644
 --- a/lib/l10n/app_es.arb
@@ -136,6 +245,19 @@ index 47bf9f4..5d7d092 100644
  
    @override
    String get syncPlay => 'SyncPlay';
+diff --git a/lib/platform/web_runtime_config_model.dart b/lib/platform/web_runtime_config_model.dart
+index d424c89..f8f994b 100644
+--- a/lib/platform/web_runtime_config_model.dart
++++ b/lib/platform/web_runtime_config_model.dart
+@@ -22,7 +22,7 @@ class WebRuntimeConfig {
+     defaultServerUrl: null,
+     discoveryProxyUrl: null,
+     enableWebRtcScan: true,
+-    brandingName: 'Moonfin',
++    brandingName: 'TaquitoFlix',
+     pluginMode: false,
+     forcedServerUrl: null,
+   );
 diff --git a/lib/preference/bottom_nav_tabs.dart b/lib/preference/bottom_nav_tabs.dart
 index 1b3cbfb..79c293d 100644
 --- a/lib/preference/bottom_nav_tabs.dart
@@ -155,7 +277,7 @@ index 1b3cbfb..79c293d 100644
    BottomNavTab.folders,
  ];
 diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
-index 654dc28..c4c6c69 100644
+index 654dc28..d958c06 100644
 --- a/lib/preference/user_preferences.dart
 +++ b/lib/preference/user_preferences.dart
 @@ -1553,7 +1553,7 @@ class UserPreferences extends ChangeNotifier {
@@ -190,6 +312,30 @@ index 654dc28..c4c6c69 100644
      values: BottomNavbarStyle.values,
    );
  
+@@ -2301,12 +2306,12 @@ class UserPreferences extends ChangeNotifier {
+ 
+   static final languageOverride = Preference<String>(
+     key: 'pref_language_override',
+-    defaultValue: 'system',
++    defaultValue: 'es',
+   );
+ 
+   static final defaultAudioLanguage = Preference(
+     key: 'pref_audio_language',
+-    defaultValue: 'auto',
++    defaultValue: 'spa',
+   );
+   static final fallbackAudioLanguage = Preference<String>(
+     key: 'pref_fallback_audio_language',
+@@ -2322,7 +2327,7 @@ class UserPreferences extends ChangeNotifier {
+   );
+   static final defaultSubtitleLanguage = Preference(
+     key: 'pref_subtitle_language',
+-    defaultValue: '',
++    defaultValue: 'spa',
+   );
+ 
+   static final subtitlesBackgroundColor = Preference(
 @@ -2609,9 +2614,8 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarMode = Preference(
@@ -220,6 +366,23 @@ index 654dc28..c4c6c69 100644
    );
  
    static final mediaBarOverlayOpacity = Preference(
+@@ -3282,14 +3286,14 @@ class UserPreferences extends ChangeNotifier {
+   static EnumPreference<LibrarySortBy> librarySortBy(String libraryId) =>
+       EnumPreference(
+         key: 'library_sort_by_$libraryId',
+-        defaultValue: LibrarySortBy.name,
++        defaultValue: LibrarySortBy.dateAdded,
+         values: LibrarySortBy.values,
+       );
+ 
+   static EnumPreference<SortDirection> librarySortDirection(String libraryId) =>
+       EnumPreference(
+         key: 'library_sort_dir_$libraryId',
+-        defaultValue: SortDirection.ascending,
++        defaultValue: SortDirection.descending,
+         values: SortDirection.values,
+       );
+ 
 diff --git a/lib/ui/navigation/app_router.dart b/lib/ui/navigation/app_router.dart
 index 737a511..a65a37c 100644
 --- a/lib/ui/navigation/app_router.dart
@@ -268,6 +431,73 @@ index 737a511..a65a37c 100644
      ),
      GoRoute(
        path: Destinations.seerrRequests,
+diff --git a/lib/ui/screens/auth/server_select_screen.dart b/lib/ui/screens/auth/server_select_screen.dart
+index 0faf067..3976660 100644
+--- a/lib/ui/screens/auth/server_select_screen.dart
++++ b/lib/ui/screens/auth/server_select_screen.dart
+@@ -32,6 +32,7 @@ import '../../widgets/allow_self_signed_dialog.dart';
+ import '../../widgets/login_scaffold.dart';
+ import '../../widgets/overlay_sheet.dart';
+ import '../../widgets/server_type_icon.dart';
++import '../../widgets/cine/cine_brand.dart';
+ 
+ final _kAccent = AppColorScheme.accent;
+ 
+@@ -68,15 +69,22 @@ class _ServerSelectScreenState extends State<ServerSelectScreen> {
+       PlatformDetection.isWeb && webRuntimeConfig.pluginMode;
+ 
+   String? get _webDefaultServerUrl {
+-    if (!PlatformDetection.isWeb) return null;
++    // TaquitoFlix: el servidor de casa viene ya escrito en todas las apps.
++    final configured = PlatformDetection.isWeb
++        ? webRuntimeConfig.defaultServerUrl?.trim() ?? ''
++        : '';
+     final normalized = normalizeServerBaseUrl(
+-      webRuntimeConfig.defaultServerUrl?.trim() ?? '',
++      configured.isEmpty ? kDefaultServerUrl : configured,
+     );
+     return normalized.isEmpty ? null : normalized;
+   }
+ 
+   String? get _webAutoConnectServerUrl {
+-    if (!PlatformDetection.isWeb) return null;
++    // TaquitoFlix: en el primer arranque (sin servidores guardados) se conecta
++    // solo al servidor de casa.
++    if (!PlatformDetection.isWeb) {
++      return _serverRepo.servers.isEmpty ? _webDefaultServerUrl : null;
++    }
+ 
+     final forced = normalizeServerBaseUrl(
+       webRuntimeConfig.forcedServerUrl?.trim() ?? '',
+@@ -88,6 +96,7 @@ class _ServerSelectScreenState extends State<ServerSelectScreen> {
+       if (origin.isNotEmpty) return origin;
+     }
+ 
++    if (_serverRepo.servers.isEmpty) return _webDefaultServerUrl;
+     return null;
+   }
+ 
+@@ -186,7 +195,10 @@ class _ServerSelectScreenState extends State<ServerSelectScreen> {
+     }
+ 
+     try {
+-      await _addServerWithoutAutoNavigation(configuredAddress);
++      final added = await _addServerWithoutAutoNavigation(configuredAddress);
++      if (added != null && mounted) {
++        context.go('${Destinations.server}?serverId=${added.id}');
++      }
+     } catch (_) {
+       if (!mounted) return;
+       _maybeOpenWebDiagnosticsForFailure(targetUrl: configuredAddress);
+@@ -240,7 +252,7 @@ class _ServerSelectScreenState extends State<ServerSelectScreen> {
+       final resolvedUserName = (currentUser.name ?? '').trim();
+       final user = PrivateUser(
+         id: resolvedUserId,
+-        name: resolvedUserName.isNotEmpty ? resolvedUserName : 'Moonfin User',
++        name: resolvedUserName.isNotEmpty ? resolvedUserName : kAppBrand,
+         serverId: server.id,
+         accessToken: credentials.accessToken,
+         lastUsed: DateTime.now(),
 diff --git a/lib/ui/screens/detail/item_detail_screen.dart b/lib/ui/screens/detail/item_detail_screen.dart
 index ecb75f7..39684e8 100644
 --- a/lib/ui/screens/detail/item_detail_screen.dart
@@ -331,6 +561,41 @@ index b764fb4..b91ebda 100644
              isAtStart: _isScrolledToTopNotifier,
              onReturn: () => _contentRowsKey.currentState?.returnToTop(),
              child: Stack(
+diff --git a/lib/ui/screens/settings/home_row_toggles_screen.dart b/lib/ui/screens/settings/home_row_toggles_screen.dart
+index 968cde2..44f7910 100644
+--- a/lib/ui/screens/settings/home_row_toggles_screen.dart
++++ b/lib/ui/screens/settings/home_row_toggles_screen.dart
+@@ -626,7 +626,7 @@ class _HomeRowTogglesScreenState extends State<HomeRowTogglesScreen> {
+                     EnumPreferenceTile<SinceYouWatchedSource>(
+                       preference: UserPreferences.sinceYouWatchedSource,
+                       title: 'Recommendation Source',
+-                      description: "Choose recommendation source (Moonfin Recommends custom local algorithm, Jellyfin Recommends server engine, or TMDb's similarity metrics. Note: Online recommendations require Seerr integration).",
++                      description: "Choose recommendation source (TaquitoFlix Recommends custom local algorithm, Jellyfin Recommends server engine, or TMDb's similarity metrics. Note: Online recommendations require Seerr integration).",
+                       icon: Icons.source,
+                       values: SinceYouWatchedSource.values,
+                       labelOf: (v) => v.displayName,
+diff --git a/lib/ui/screens/settings/panel/about_category_screen.dart b/lib/ui/screens/settings/panel/about_category_screen.dart
+index 1f0d8c6..5a53604 100644
+--- a/lib/ui/screens/settings/panel/about_category_screen.dart
++++ b/lib/ui/screens/settings/panel/about_category_screen.dart
+@@ -43,7 +43,7 @@ class _AboutCategoryScreen extends StatelessWidget {
+                 subtitle: Text(l10n.sourceCodeUrl),
+                 onTap: () => showQrOrLaunch(
+                   context,
+-                  url: 'https://github.com/Moonfin-Client/Moonfin-Core',
++                  url: 'https://github.com/JMRMINGORANCE/moonfin-TV',
+                   title: l10n.sourceCode,
+                 ),
+               ),
+@@ -53,7 +53,7 @@ class _AboutCategoryScreen extends StatelessWidget {
+                 subtitle: Text(l10n.settingsReportAnIssueSubtitle),
+                 onTap: () => showQrOrLaunch(
+                   context,
+-                  url: 'https://github.com/Moonfin-Client/Moonfin-Core/issues',
++                  url: 'https://github.com/JMRMINGORANCE/moonfin-TV/issues',
+                   title: l10n.settingsReportAnIssue,
+                 ),
+               ),
 diff --git a/lib/ui/theme/app_theme_controller.dart b/lib/ui/theme/app_theme_controller.dart
 index ae3e265..ee709bb 100644
 --- a/lib/ui/theme/app_theme_controller.dart
@@ -368,6 +633,19 @@ index 9698869..88da71b 100644
      if (position == NavbarPosition.bottom && !allowBottomNavbar) {
        return NavbarPosition.top;
      }
+diff --git a/lib/util/overlay_color_palette.dart b/lib/util/overlay_color_palette.dart
+index 8376c94..0c46ad4 100644
+--- a/lib/util/overlay_color_palette.dart
++++ b/lib/util/overlay_color_palette.dart
+@@ -102,7 +102,7 @@ abstract final class OverlayColorPalette {
+       'dark_green' => l10n.darkGreen,
+       'slate' => l10n.slate,
+       'indigo' => l10n.indigo,
+-      'moonfinCyan' => 'Moonfin Cyan',
++      'moonfinCyan' => 'Cyan',
+       'neonPulseMagenta' => 'Neon Pulse Magenta',
+       _ => normalizeKey(key),
+     };
 diff --git a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart b/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
 index 1006910..549abdd 100644
 --- a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
@@ -436,18 +714,96 @@ index 1006910..549abdd 100644
      focusGlow: [],
    ),
  );
+diff --git a/web/config.json b/web/config.json
+index cb69bb5..9e617d4 100644
+--- a/web/config.json
++++ b/web/config.json
+@@ -1,9 +1,9 @@
+ {
+   "schemaVersion": 1,
+-  "defaultServerUrl": null,
++  "defaultServerUrl": "https://tv.josemingorance.es",
+   "discoveryProxyUrl": null,
+   "enableWebRtcScan": true,
+-  "brandingName": "Moonfin",
++  "brandingName": "TaquitoFlix",
+   "pluginMode": false,
+   "forcedServerUrl": null
+ }
+diff --git a/web/index.html b/web/index.html
+index 81f2cd0..9fe985d 100644
+--- a/web/index.html
++++ b/web/index.html
+@@ -6,17 +6,17 @@
+   <meta charset="UTF-8">
+   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+-  <meta name="description" content="Moonfin web client for self-hosted media servers">
++  <meta name="description" content="TaquitoFlix">
+   <meta name="theme-color" content="#101010">
+ 
+   <meta name="mobile-web-app-capable" content="yes">
+   <meta name="apple-mobile-web-app-capable" content="yes">
+   <meta name="apple-mobile-web-app-status-bar-style" content="black">
+-  <meta name="apple-mobile-web-app-title" content="Moonfin">
++  <meta name="apple-mobile-web-app-title" content="TaquitoFlix">
+   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+   <link rel="icon" type="image/png" href="favicon.png">
+ 
+-  <title>Moonfin</title>
++  <title>TaquitoFlix</title>
+   <link rel="manifest" href="manifest.json">
+   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+ 
+@@ -185,11 +185,11 @@
+         <img
+           class="moonfin-loader__logo"
+           src="assets/assets/icons/moonfin_logo.svg"
+-          alt="Moonfin"
++          alt="TaquitoFlix"
+           onerror="this.onerror=null;this.src='assets/icons/moonfin_logo.svg';"
+         >
+       </div>
+-      <div class="moonfin-loader__label">Loading Moonfin</div>
++      <div class="moonfin-loader__label">TaquitoFlix</div>
+     </div>
+   </div>
+   <script src="flutter_bootstrap.js" async></script>
 diff --git a/web/manifest.json b/web/manifest.json
-index a117ef9..f0d3b90 100644
+index a117ef9..6711c54 100644
 --- a/web/manifest.json
 +++ b/web/manifest.json
-@@ -4,8 +4,8 @@
+@@ -1,12 +1,12 @@
+ {
+-    "name": "Moonfin",
+-    "short_name": "Moonfin",
++    "name": "TaquitoFlix",
++    "short_name": "TaquitoFlix",
      "start_url": ".",
      "display": "standalone",
      "display_override": ["standalone", "window-controls-overlay"],
 -    "background_color": "#101010",
 -    "theme_color": "#00A4DC",
+-    "description": "Moonfin web client for self-hosted media servers",
 +    "background_color": "#000000",
 +    "theme_color": "#E50914",
-     "description": "Moonfin web client for self-hosted media servers",
++    "description": "TaquitoFlix",
      "orientation": "portrait-primary",
      "prefer_related_applications": false,
+     "categories": ["entertainment", "video", "music"],
+@@ -39,13 +39,13 @@
+             "src": "screenshots/moonfin-home.png",
+             "sizes": "512x512",
+             "type": "image/png",
+-            "label": "Moonfin home"
++            "label": "TaquitoFlix home"
+         },
+         {
+             "src": "screenshots/moonfin-library.png",
+             "sizes": "512x512",
+             "type": "image/png",
+-            "label": "Moonfin library"
++            "label": "TaquitoFlix library"
+         }
+     ]
+ }

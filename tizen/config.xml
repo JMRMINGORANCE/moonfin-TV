@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets"
-        id="http://moonfin.cine/tizen" version="__VERSION__" viewmodes="maximized">
-    <tizen:application id="MfnCine001.MoonfinCine" package="MfnCine001" required_version="6.0"/>
+        id="http://josemingorance.es/taquitoflix" version="__VERSION__" viewmodes="maximized">
+    <tizen:application id="TaquitoFlx.TaquitoFlix" package="TaquitoFlx" required_version="6.0"/>
     <content src="index.html"/>
     <feature name="http://tizen.org/feature/screen.size.all"/>
     <icon src="icon.png"/>
-    <name>Moonfin Cine</name>
+    <name>TaquitoFlix</name>
     <tizen:profile name="tv-samsung"/>
     <access origin="*" subdomains="true"/>
     <tizen:allow-navigation>*</tizen:allow-navigation>
