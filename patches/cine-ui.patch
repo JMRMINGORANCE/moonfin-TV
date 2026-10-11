@@ -131,120 +131,6 @@ index 5036d73..a44a56c 100644
      _playedFilter = _prefs.get(UserPreferences.libraryPlayedFilter(_prefKey));
      _likedFilter = _prefs.get(UserPreferences.libraryLikedFilter(_prefKey));
      _seriesFilter = _prefs.get(UserPreferences.librarySeriesFilter(_prefKey));
-diff --git a/lib/l10n/app_es.arb b/lib/l10n/app_es.arb
-index 5708c1b..7b5592c 100644
---- a/lib/l10n/app_es.arb
-+++ b/lib/l10n/app_es.arb
-@@ -6028,7 +6028,7 @@
-         }
-     },
-     "folders": "Carpetas",
--    "libraries": "Bibliotecas",
-+    "libraries": "Mi biblioteca",
-     "syncPlay": "SyncPlay",
-     "seeAll": "Ver todo",
-     "noItems": "No hay elementos",
-diff --git a/lib/l10n/app_es_419.arb b/lib/l10n/app_es_419.arb
-index 6ff0026..d82ee33 100644
---- a/lib/l10n/app_es_419.arb
-+++ b/lib/l10n/app_es_419.arb
-@@ -6114,7 +6114,7 @@
-         }
-     },
-     "folders": "Carpetas",
--    "libraries": "Bibliotecas",
-+    "libraries": "Mi biblioteca",
-     "syncPlay": "SyncPlay",
-     "syncPlayDisabledTitle": "SyncPlay deshabilitado",
-     "syncPlayDisabledMessage": "Habilite SyncPlay en Configuración para usar la reproducción sincronizada.",
-diff --git a/lib/l10n/app_es_AR.arb b/lib/l10n/app_es_AR.arb
-index 61a4193..722f6a6 100644
---- a/lib/l10n/app_es_AR.arb
-+++ b/lib/l10n/app_es_AR.arb
-@@ -6110,7 +6110,7 @@
-         }
-     },
-     "folders": "Carpetas",
--    "libraries": "Bibliotecas",
-+    "libraries": "Mi biblioteca",
-     "syncPlay": "SyncPlay",
-     "syncPlayDisabledTitle": "SyncPlay deshabilitado",
-     "syncPlayDisabledMessage": "Habilite SyncPlay en Configuración para usar la reproducción sincronizada.",
-diff --git a/lib/l10n/app_es_DO.arb b/lib/l10n/app_es_DO.arb
-index 43e86bd..686d844 100644
---- a/lib/l10n/app_es_DO.arb
-+++ b/lib/l10n/app_es_DO.arb
-@@ -6110,7 +6110,7 @@
-         }
-     },
-     "folders": "Carpetas",
--    "libraries": "Bibliotecas",
-+    "libraries": "Mi biblioteca",
-     "syncPlay": "SyncPlay",
-     "syncPlayDisabledTitle": "SyncPlay deshabilitado",
-     "syncPlayDisabledMessage": "Habilite SyncPlay en Configuración para usar la reproducción sincronizada.",
-diff --git a/lib/l10n/app_es_MX.arb b/lib/l10n/app_es_MX.arb
-index e493616..d0c962e 100644
---- a/lib/l10n/app_es_MX.arb
-+++ b/lib/l10n/app_es_MX.arb
-@@ -6110,7 +6110,7 @@
-         }
-     },
-     "folders": "Carpetas",
--    "libraries": "Bibliotecas",
-+    "libraries": "Mi biblioteca",
-     "syncPlay": "SyncPlay",
-     "syncPlayDisabledTitle": "SyncPlay deshabilitado",
-     "syncPlayDisabledMessage": "Habilite SyncPlay en Configuración para usar la reproducción sincronizada.",
-diff --git a/lib/l10n/app_localizations_es.dart b/lib/l10n/app_localizations_es.dart
-index 47bf9f4..5d7d092 100644
---- a/lib/l10n/app_localizations_es.dart
-+++ b/lib/l10n/app_localizations_es.dart
-@@ -9392,7 +9392,7 @@ class AppLocalizationsEs extends AppLocalizations {
-   String get folders => 'Carpetas';
- 
-   @override
--  String get libraries => 'Bibliotecas';
-+  String get libraries => 'Mi biblioteca';
- 
-   @override
-   String get syncPlay => 'SyncPlay';
-@@ -20059,7 +20059,7 @@ class AppLocalizationsEs419 extends AppLocalizationsEs {
-   String get folders => 'Carpetas';
- 
-   @override
--  String get libraries => 'Bibliotecas';
-+  String get libraries => 'Mi biblioteca';
- 
-   @override
-   String get syncPlay => 'SyncPlay';
-@@ -27669,7 +27669,7 @@ class AppLocalizationsEsAr extends AppLocalizationsEs {
-   String get folders => 'Carpetas';
- 
-   @override
--  String get libraries => 'Bibliotecas';
-+  String get libraries => 'Mi biblioteca';
- 
-   @override
-   String get syncPlay => 'SyncPlay';
-@@ -35279,7 +35279,7 @@ class AppLocalizationsEsDo extends AppLocalizationsEs {
-   String get folders => 'Carpetas';
- 
-   @override
--  String get libraries => 'Bibliotecas';
-+  String get libraries => 'Mi biblioteca';
- 
-   @override
-   String get syncPlay => 'SyncPlay';
-@@ -42939,7 +42939,7 @@ class AppLocalizationsEsMx extends AppLocalizationsEs {
-   String get folders => 'Carpetas';
- 
-   @override
--  String get libraries => 'Bibliotecas';
-+  String get libraries => 'Mi biblioteca';
- 
-   @override
-   String get syncPlay => 'SyncPlay';
 diff --git a/lib/platform/web_runtime_config_model.dart b/lib/platform/web_runtime_config_model.dart
 index d424c89..f8f994b 100644
 --- a/lib/platform/web_runtime_config_model.dart
@@ -277,7 +163,7 @@ index 1b3cbfb..79c293d 100644
    BottomNavTab.folders,
  ];
 diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
-index 654dc28..d958c06 100644
+index 654dc28..51ce215 100644
 --- a/lib/preference/user_preferences.dart
 +++ b/lib/preference/user_preferences.dart
 @@ -1553,7 +1553,7 @@ class UserPreferences extends ChangeNotifier {
@@ -327,15 +213,6 @@ index 654dc28..d958c06 100644
    );
    static final fallbackAudioLanguage = Preference<String>(
      key: 'pref_fallback_audio_language',
-@@ -2322,7 +2327,7 @@ class UserPreferences extends ChangeNotifier {
-   );
-   static final defaultSubtitleLanguage = Preference(
-     key: 'pref_subtitle_language',
--    defaultValue: '',
-+    defaultValue: 'spa',
-   );
- 
-   static final subtitlesBackgroundColor = Preference(
 @@ -2609,9 +2614,8 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarMode = Preference(
@@ -384,7 +261,7 @@ index 654dc28..d958c06 100644
        );
  
 diff --git a/lib/ui/navigation/app_router.dart b/lib/ui/navigation/app_router.dart
-index 737a511..a65a37c 100644
+index 737a511..4e427ce 100644
 --- a/lib/ui/navigation/app_router.dart
 +++ b/lib/ui/navigation/app_router.dart
 @@ -27,6 +27,9 @@ import '../screens/browse/collection_screen.dart';
@@ -397,7 +274,16 @@ index 737a511..a65a37c 100644
  import '../screens/browse/library_genres_screen.dart';
  import '../screens/browse/library_letters_screen.dart';
  import '../screens/browse/library_suggestions_screen.dart';
-@@ -322,11 +325,20 @@ final appRouter = GoRouter(
+@@ -119,6 +122,8 @@ const _authRoutes = {
+ /// answers false for anything it can't decide cheaply, since letting somebody
+ /// through to Home costs nothing next to stranding them outside it.
+ bool _shouldRunSetupWizard() {
++  // TaquitoFlix: la interfaz ya viene configurada; no hay asistente estético.
++  if (kCineUi) return false;
+   try {
+     final client = GetIt.instance<MediaServerClientFactory>().getActiveClient();
+     return GetIt.instance<SetupWizardGate>().shouldRun(client);
+@@ -322,11 +327,20 @@ final appRouter = GoRouter(
              ?.split(',')
              .map(Uri.decodeComponent)
              .toList();
@@ -419,7 +305,7 @@ index 737a511..a65a37c 100644
          );
        },
        routes: [
-@@ -805,7 +817,10 @@ final appRouter = GoRouter(
+@@ -805,7 +819,10 @@ final appRouter = GoRouter(
      // Seerr
      GoRoute(
        path: Destinations.seerrDiscover,
@@ -499,7 +385,7 @@ index 0faf067..3976660 100644
          accessToken: credentials.accessToken,
          lastUsed: DateTime.now(),
 diff --git a/lib/ui/screens/detail/item_detail_screen.dart b/lib/ui/screens/detail/item_detail_screen.dart
-index ecb75f7..2496faa 100644
+index ecb75f7..888930e 100644
 --- a/lib/ui/screens/detail/item_detail_screen.dart
 +++ b/lib/ui/screens/detail/item_detail_screen.dart
 @@ -47,6 +47,8 @@ import '../../../preference/detail_section_layout.dart';
@@ -553,11 +439,22 @@ index ecb75f7..2496faa 100644
            seerr.canManageRequests &&
            seerrPendingRequests(seerr.state).isNotEmpty &&
            shows(DetailButton.seerrManage))
-@@ -13779,7 +13798,7 @@ Widget? _seerrRequestButton(
+@@ -13777,9 +13796,17 @@ Widget? _seerrRequestButton(
+     hasUnrequestedSeasons: hasUnrequestedSeasons,
+   );
    if (action.kind != SeerrRequestActionKind.request) return null;
++  // TaquitoFlix: con la aprobación automática de Seerr, pedir es descargar.
++  final isMore =
++      action.label == l10n.requestMore || action.label == l10n.requestMore4k;
++  final cineLabel = isMore
++      ? cineText(context, 'Descargar más', 'Download more')
++      : cineText(context, 'Descargar', 'Download');
    return _DetailActionButton(
-     label: action.label,
+-    label: action.label,
 -    icon: Icons.add,
++    label: kCineUi
++        ? (is4k ? '$cineLabel 4K' : cineLabel)
++        : action.label,
 +    icon: kCineUi ? Icons.download_rounded : Icons.add,
      isPrimary: isPrimary,
      focusNode: focusNode,
@@ -626,6 +523,53 @@ index 1f0d8c6..5a53604 100644
                    title: l10n.settingsReportAnIssue,
                  ),
                ),
+diff --git a/lib/ui/screens/settings/settings_side_panel.dart b/lib/ui/screens/settings/settings_side_panel.dart
+index 01793e9..b841ce7 100644
+--- a/lib/ui/screens/settings/settings_side_panel.dart
++++ b/lib/ui/screens/settings/settings_side_panel.dart
+@@ -107,6 +107,7 @@ import '../../../preference/detail_section_layout.dart';
+ import '../detail/detail_buttons.dart';
+ import '../playback/osd_buttons.dart';
+ import '../syncplay/syncplay_screen.dart';
++import '../../widgets/cine/cine_widgets.dart';
+ 
+ part 'panel/settings_panel_infra.dart';
+ part 'panel/settings_search_field.dart';
+@@ -139,6 +140,7 @@ part 'panel/automation_queue_screen.dart';
+ part 'panel/advanced_options_screen.dart';
+ part 'panel/syncplay_settings_screen.dart';
+ part 'panel/settings_panel_tiles.dart';
++part 'panel/cine_settings.dart';
+ 
+ bool get _showThemeEditorEntry =>
+     PlatformDetection.isWeb && webRuntimeConfig.pluginMode;
+@@ -312,6 +314,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+               onTap: () => unawaited(_exitKidsMode(context)),
+             ),
+           ]
++        : kCineUi
++        ? _cineSettingsEntries(
++            context,
++            l10n,
++            showAdmin: showAdmin,
++            firstFocus: enablePanelAutofocus ? _firstFocusNode : null,
++            openAdmin: () {
++              _closeSettingsPanel();
++              context.navigateTopLevel(Destinations.admin);
++            },
++          )
+         : <_PanelEntry>[
+             if (showAdmin)
+               _PanelEntry(
+@@ -389,6 +402,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+       ),
+       body: Column(
+         children: [
++          // TaquitoFlix: el menú es corto; la búsqueda llevaría a ajustes ocultos.
++          if (!kCineUi)
+           Padding(
+             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+             child: _SettingsSearchField(
 diff --git a/lib/ui/theme/app_theme_controller.dart b/lib/ui/theme/app_theme_controller.dart
 index ae3e265..ee709bb 100644
 --- a/lib/ui/theme/app_theme_controller.dart
