@@ -1017,7 +1017,7 @@ index a117ef9..6711c54 100644
      "display": "standalone",
      "display_override": ["standalone", "window-controls-overlay"],
 -    "background_color": "#101010",
--    "theme_color": "#E50914",
+-    "theme_color": "#00A4DC",
 -    "description": "Moonfin web client for self-hosted media servers",
 +    "background_color": "#000000",
 +    "theme_color": "#E50914",
