@@ -188,10 +188,23 @@ index b6af477..fd59163 100644
      ),
      HomeSectionConfig(
 diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
-index 654dc28..8a048fc 100644
+index 654dc28..e626404 100644
 --- a/lib/preference/user_preferences.dart
 +++ b/lib/preference/user_preferences.dart
-@@ -1229,17 +1229,17 @@ class UserPreferences extends ChangeNotifier {
+@@ -808,7 +808,11 @@ class UserPreferences extends ChangeNotifier {
+ 
+   /// Whether a media bar trailer may play here. A device on the reduced tier
+   /// keeps the still image, because the decoder is what takes it down.
+-  bool resolveMediaBarTrailerPreview() => inlinePreviewAllowed(
++  bool resolveMediaBarTrailerPreview() =>
++      // TaquitoFlix: en Samsung (web en modo TV) los tráileres de YouTube van
++      // demasiado justos; allí la cabecera se queda con la imagen.
++      !(PlatformDetection.isWeb && PlatformDetection.isTV) &&
++      inlinePreviewAllowed(
+     userEnabled: get(mediaBarTrailerPreview),
+     tier: resolveDevicePerformanceTier(),
+   );
+@@ -1229,17 +1233,17 @@ class UserPreferences extends ChangeNotifier {
  
    static final sinceYouWatched1Enabled = Preference(
      key: 'since_you_watched_1_enabled',
@@ -212,7 +225,7 @@ index 654dc28..8a048fc 100644
    );
  
    static final sinceYouWatched4Enabled = Preference(
-@@ -1553,7 +1553,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -1553,7 +1557,7 @@ class UserPreferences extends ChangeNotifier {
    /// because it syncs to that server's profile.
    static final detailScreenStyle = EnumPreference(
      key: 'pref_detail_screen_style',
@@ -221,7 +234,7 @@ index 654dc28..8a048fc 100644
      values: DetailScreenStyle.values,
    );
  
-@@ -1789,7 +1789,12 @@ class UserPreferences extends ChangeNotifier {
+@@ -1789,7 +1793,12 @@ class UserPreferences extends ChangeNotifier {
  
    static final navbarPosition = EnumPreference(
      key: 'pref_navbar_position',
@@ -235,7 +248,7 @@ index 654dc28..8a048fc 100644
      values: NavbarPosition.values,
    );
  
-@@ -1797,7 +1802,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -1797,7 +1806,7 @@ class UserPreferences extends ChangeNotifier {
    // so they land on Dock. That's the whole migration.
    static final bottomNavbarStyle = EnumPreference(
      key: 'pref_bottom_navbar_style',
@@ -244,7 +257,7 @@ index 654dc28..8a048fc 100644
      values: BottomNavbarStyle.values,
    );
  
-@@ -2301,12 +2306,12 @@ class UserPreferences extends ChangeNotifier {
+@@ -2301,12 +2310,12 @@ class UserPreferences extends ChangeNotifier {
  
    static final languageOverride = Preference<String>(
      key: 'pref_language_override',
@@ -259,7 +272,7 @@ index 654dc28..8a048fc 100644
    );
    static final fallbackAudioLanguage = Preference<String>(
      key: 'pref_fallback_audio_language',
-@@ -2394,7 +2399,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2394,7 +2403,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final subtitleMode = EnumPreference(
      key: 'pref_subtitle_mode',
@@ -268,7 +281,7 @@ index 654dc28..8a048fc 100644
      values: SubtitleMode.values,
    );
  
-@@ -2609,9 +2614,8 @@ class UserPreferences extends ChangeNotifier {
+@@ -2609,9 +2618,8 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarMode = Preference(
      key: 'mediaBarMode',
@@ -280,7 +293,7 @@ index 654dc28..8a048fc 100644
    );
  
    static final mediaBarContentType = Preference(
-@@ -2621,7 +2625,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2621,7 +2629,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarSourceType = Preference(
      key: 'mediaBarSourceType',
@@ -289,7 +302,7 @@ index 654dc28..8a048fc 100644
    );
  
    static final mediaBarItemCount = Preference(
-@@ -2636,7 +2640,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2636,7 +2644,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final navbarColor = Preference(
      key: 'navbarColor',
@@ -298,7 +311,7 @@ index 654dc28..8a048fc 100644
    );
  
    static final mediaBarOverlayOpacity = Preference(
-@@ -3282,14 +3286,14 @@ class UserPreferences extends ChangeNotifier {
+@@ -3282,14 +3290,14 @@ class UserPreferences extends ChangeNotifier {
    static EnumPreference<LibrarySortBy> librarySortBy(String libraryId) =>
        EnumPreference(
          key: 'library_sort_by_$libraryId',
@@ -316,20 +329,21 @@ index 654dc28..8a048fc 100644
        );
  
 diff --git a/lib/ui/navigation/app_router.dart b/lib/ui/navigation/app_router.dart
-index 737a511..4e427ce 100644
+index 737a511..84599d3 100644
 --- a/lib/ui/navigation/app_router.dart
 +++ b/lib/ui/navigation/app_router.dart
-@@ -27,6 +27,9 @@ import '../screens/browse/collection_screen.dart';
+@@ -27,6 +27,10 @@ import '../screens/browse/collection_screen.dart';
  import '../screens/browse/favorites_screen.dart';
  import '../screens/browse/folder_browse_screen.dart';
  import '../screens/browse/library_browse_screen.dart';
 +import '../screens/browse/cine_library_screen.dart';
 +import '../screens/seerr/cine_seerr_screen.dart';
++import '../screens/search/cine_search_screen.dart';
 +import '../widgets/cine/cine_widgets.dart';
  import '../screens/browse/library_genres_screen.dart';
  import '../screens/browse/library_letters_screen.dart';
  import '../screens/browse/library_suggestions_screen.dart';
-@@ -119,6 +122,8 @@ const _authRoutes = {
+@@ -119,6 +123,8 @@ const _authRoutes = {
  /// answers false for anything it can't decide cheaply, since letting somebody
  /// through to Home costs nothing next to stranding them outside it.
  bool _shouldRunSetupWizard() {
@@ -338,7 +352,18 @@ index 737a511..4e427ce 100644
    try {
      final client = GetIt.instance<MediaServerClientFactory>().getActiveClient();
      return GetIt.instance<SetupWizardGate>().shouldRun(client);
-@@ -322,11 +327,20 @@ final appRouter = GoRouter(
+@@ -302,7 +308,9 @@ final appRouter = GoRouter(
+     ),
+     GoRoute(
+       path: Destinations.search,
+-      builder: (context, state) => SearchScreen(
++      builder: (context, state) => kCineUi && state.extra is! RemoteSearchSession
++          ? CineSearchScreen(initialQuery: state.uri.queryParameters['query'])
++          : SearchScreen(
+         key: state.extra is RemoteSearchSession ? ObjectKey(state.extra) : null,
+         remoteSearch: state.extra is RemoteSearchSession
+             ? state.extra as RemoteSearchSession
+@@ -322,11 +330,20 @@ final appRouter = GoRouter(
              ?.split(',')
              .map(Uri.decodeComponent)
              .toList();
@@ -360,7 +385,7 @@ index 737a511..4e427ce 100644
          );
        },
        routes: [
-@@ -805,7 +819,10 @@ final appRouter = GoRouter(
+@@ -805,7 +822,10 @@ final appRouter = GoRouter(
      // Seerr
      GoRoute(
        path: Destinations.seerrDiscover,
@@ -650,21 +675,22 @@ index ecb75f7..888930e 100644
      focusNode: focusNode,
      autofocus: autofocus,
 diff --git a/lib/ui/screens/home/home_screen.dart b/lib/ui/screens/home/home_screen.dart
-index b764fb4..633e76f 100644
+index b764fb4..3921722 100644
 --- a/lib/ui/screens/home/home_screen.dart
 +++ b/lib/ui/screens/home/home_screen.dart
-@@ -87,6 +87,10 @@ import 'home_view_model.dart';
+@@ -87,6 +87,11 @@ import 'home_view_model.dart';
  import '../../widgets/seerr/seerr_genre_label.dart';
  import '../../widgets/skeleton/skeleton_home_row.dart';
  import '../../widgets/skeleton/skeleton_shimmer.dart';
 +import '../../widgets/cine/cine_widgets.dart';
 +import '../../widgets/cine/cine_favorite_button.dart';
++import '../../widgets/cine/cine_empty_state.dart';
 +
 +part 'cine_home.dart';
  
  Color get _homeBackground => AppColorScheme.background;
  
-@@ -536,10 +540,12 @@ class _HomeShellState extends State<_HomeShell>
+@@ -536,10 +541,12 @@ class _HomeShellState extends State<_HomeShell>
          _showExitConfirmation(context);
        },
        child: Scaffold(
@@ -715,18 +741,22 @@ index 1f0d8c6..5a53604 100644
                  ),
                ),
 diff --git a/lib/ui/screens/settings/settings_side_panel.dart b/lib/ui/screens/settings/settings_side_panel.dart
-index 01793e9..b841ce7 100644
+index 01793e9..23c61ea 100644
 --- a/lib/ui/screens/settings/settings_side_panel.dart
 +++ b/lib/ui/screens/settings/settings_side_panel.dart
-@@ -107,6 +107,7 @@ import '../../../preference/detail_section_layout.dart';
+@@ -107,6 +107,11 @@ import '../../../preference/detail_section_layout.dart';
  import '../detail/detail_buttons.dart';
  import '../playback/osd_buttons.dart';
  import '../syncplay/syncplay_screen.dart';
 +import '../../widgets/cine/cine_widgets.dart';
++import 'package:flutter_svg/flutter_svg.dart';
++import 'package:go_router/go_router.dart';
++import '../../../auth/repositories/server_repository.dart';
++import '../../../auth/repositories/server_user_repository.dart';
  
  part 'panel/settings_panel_infra.dart';
  part 'panel/settings_search_field.dart';
-@@ -139,6 +140,7 @@ part 'panel/automation_queue_screen.dart';
+@@ -139,6 +144,7 @@ part 'panel/automation_queue_screen.dart';
  part 'panel/advanced_options_screen.dart';
  part 'panel/syncplay_settings_screen.dart';
  part 'panel/settings_panel_tiles.dart';
@@ -734,7 +764,7 @@ index 01793e9..b841ce7 100644
  
  bool get _showThemeEditorEntry =>
      PlatformDetection.isWeb && webRuntimeConfig.pluginMode;
-@@ -312,6 +314,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -312,6 +318,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
                onTap: () => unawaited(_exitKidsMode(context)),
              ),
            ]
@@ -752,7 +782,26 @@ index 01793e9..b841ce7 100644
          : <_PanelEntry>[
              if (showAdmin)
                _PanelEntry(
-@@ -389,6 +402,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -376,6 +393,18 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+             ),
+           ];
+ 
++    // TaquitoFlix: ajustes rediseñados (ver panel/cine_settings.dart).
++    if (kCineUi && !kidsMode) {
++      return _CineSettingsHome(
++        showAdmin: showAdmin,
++        onClose: _closeSettingsPanel,
++        openAdmin: () {
++          _closeSettingsPanel();
++          context.navigateTopLevel(Destinations.admin);
++        },
++      );
++    }
++
+     return Scaffold(
+       appBar: AppBar(
+         leading: PlatformDetection.isTV
+@@ -389,6 +418,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
        ),
        body: Column(
          children: [
@@ -968,7 +1017,7 @@ index a117ef9..6711c54 100644
      "display": "standalone",
      "display_override": ["standalone", "window-controls-overlay"],
 -    "background_color": "#101010",
--    "theme_color": "#00A4DC",
+-    "theme_color": "#E50914",
 -    "description": "Moonfin web client for self-hosted media servers",
 +    "background_color": "#000000",
 +    "theme_color": "#E50914",
