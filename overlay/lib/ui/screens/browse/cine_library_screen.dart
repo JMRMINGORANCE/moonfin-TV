@@ -17,6 +17,7 @@ import '../../../data/services/media_server_client_factory.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../util/platform_detection.dart';
 import '../../navigation/destinations.dart';
+import '../../widgets/cine/cine_favorite_button.dart';
 import '../../widgets/cine/cine_widgets.dart';
 import '../../widgets/focus/context_menu_sheet.dart';
 import '../../widgets/navigation_layout.dart';
@@ -158,7 +159,7 @@ class _CineLibraryScreenState extends State<CineLibraryScreen> {
 
     const newest = 'DateCreated,SortName';
     final results = await Future.wait([
-      _query(sortBy: newest, limit: 12),
+      _query(sortBy: newest, limit: 12, fields: '$_fields,RemoteTrailers'),
       _query(sortBy: newest),
       _query(sortBy: 'CommunityRating'),
       _query(sortBy: newest, filters: const ['IsUnplayed']),
@@ -372,51 +373,57 @@ class _CineLibraryScreenState extends State<CineLibraryScreen> {
               : CineHero(
                   data: _heroData(hero),
                   mobileTopInset: 96,
-                  buttons: (expand) => [
-                    if (expand)
-                      Expanded(
-                        child: CineButton(
-                          focusNode: _heroPlay,
-                          icon: Icons.play_arrow_rounded,
-                          label: l10n.play,
-                          primary: true,
-                          expand: true,
-                          onTap: () => _play(hero),
-                        ),
-                      )
-                    else
-                      CineButton(
-                        focusNode: _heroPlay,
-                        autofocus: true,
-                        icon: Icons.play_arrow_rounded,
-                        label: l10n.play,
-                        primary: true,
-                        onLeftEdge: leftEdge,
-                        onTap: () => _play(hero),
-                      ),
-                    SizedBox(width: expand ? 10 : 12),
-                    if (expand)
-                      Expanded(
-                        child: CineButton(
-                          icon: Icons.info_outline_rounded,
-                          label: cineText(context, 'Más info', 'More info'),
-                          primary: false,
-                          expand: true,
-                          onTap: () => _open(hero),
-                        ),
-                      )
-                    else
-                      CineButton(
-                        icon: Icons.info_outline_rounded,
-                        label: cineText(
-                          context,
-                          'Más información',
-                          'More info',
-                        ),
-                        primary: false,
-                        onTap: () => _open(hero),
-                      ),
-                  ],
+                  trailerVideoId: cineTrailerVideoId(
+                    (hero.rawData['RemoteTrailers'] as List?)
+                            ?.whereType<Map<String, dynamic>>()
+                            .toList() ??
+                        const <Map<String, dynamic>>[],
+                  ),
+                  onOpen: () => _open(hero),
+                  buttons: (expand) => expand
+                      ? [
+                          Expanded(
+                            child: CineButton(
+                              focusNode: _heroPlay,
+                              icon: Icons.play_arrow_rounded,
+                              label: l10n.play,
+                              primary: true,
+                              expand: true,
+                              onTap: () => _play(hero),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: CineFavoriteButton(
+                              itemId: hero.id,
+                              initialFavorite: hero.isFavorite,
+                              expand: true,
+                            ),
+                          ),
+                        ]
+                      : [
+                          CineButton(
+                            focusNode: _heroPlay,
+                            autofocus: true,
+                            icon: Icons.play_arrow_rounded,
+                            label: l10n.play,
+                            primary: true,
+                            onLeftEdge: leftEdge,
+                            onTap: () => _play(hero),
+                          ),
+                          const SizedBox(width: 12),
+                          CineButton(
+                            icon: Icons.info_outline_rounded,
+                            label: cineText(context, 'Más info', 'More info'),
+                            primary: false,
+                            onTap: () => _open(hero),
+                          ),
+                          const SizedBox(width: 12),
+                          CineFavoriteButton(
+                            itemId: hero.id,
+                            initialFavorite: hero.isFavorite,
+                          ),
+                        ],
                 ),
         ),
         if (_loading)
