@@ -148,7 +148,8 @@ class _CineHomeState extends State<_CineHome> {
       row.rowType == HomeRowType.liveTv ||
       row.rowType == HomeRowType.activeRecordings;
 
-  ({String itemId, String serverId, CineHeroData data})? _resolveHero(
+  ({String itemId, String serverId, CineHeroData data, String? trailer})?
+      _resolveHero(
     List<HomeRow> rows,
   ) {
     final slides = widget.viewModel.mediaBarViewModel.items;
@@ -157,6 +158,7 @@ class _CineHomeState extends State<_CineHome> {
       return (
         itemId: s.itemId,
         serverId: s.serverId,
+        trailer: cineTrailerVideoId(s.remoteTrailers),
         data: CineHeroData(
           title: s.title,
           overview: s.overview,
@@ -176,9 +178,14 @@ class _CineHomeState extends State<_CineHome> {
         if (item.serverId == 'seerr') continue;
         if (item.backdropImageTags.isEmpty) continue;
         final api = widget.viewModel.imageApiForServer(item.serverId);
+        final trailers = (item.rawData['RemoteTrailers'] as List?)
+                ?.whereType<Map<String, dynamic>>()
+                .toList() ??
+            const <Map<String, dynamic>>[];
         return (
           itemId: item.id,
           serverId: item.serverId,
+          trailer: cineTrailerVideoId(trailers),
           data: CineHeroData(
             title: item.name,
             overview: item.overview,
@@ -422,52 +429,53 @@ class _CineHomeState extends State<_CineHome> {
                     : CineHero(
                         data: hero.data,
                         mobileTopInset: 100,
-                        buttons: (expand) => [
-                          if (expand)
-                            Expanded(
-                              child: CineButton(
-                                focusNode: _heroPlayFocus,
-                                icon: Icons.play_arrow_rounded,
-                                label: l10n.play,
-                                primary: true,
-                                expand: true,
-                                onTap: () => _play(hero.itemId, hero.serverId),
-                              ),
-                            )
-                          else
-                            CineButton(
-                              focusNode: _heroPlayFocus,
-                              icon: Icons.play_arrow_rounded,
-                              label: l10n.play,
-                              primary: true,
-                              onUpEdge: upEdge,
-                              onLeftEdge: leftEdge,
-                              onTap: () => _play(hero.itemId, hero.serverId),
-                            ),
-                          SizedBox(width: expand ? 10 : 12),
-                          if (expand)
-                            Expanded(
-                              child: CineButton(
-                                icon: Icons.info_outline_rounded,
-                                label: cineText(context, 'Más info', 'More info'),
-                                primary: false,
-                                expand: true,
-                                onTap: () => _info(hero.itemId, hero.serverId),
-                              ),
-                            )
-                          else
-                            CineButton(
-                              icon: Icons.info_outline_rounded,
-                              label: cineText(
-                                context,
-                                'Más información',
-                                'More info',
-                              ),
-                              primary: false,
-                              onUpEdge: upEdge,
-                              onTap: () => _info(hero.itemId, hero.serverId),
-                            ),
-                        ],
+                        trailerVideoId: hero.trailer,
+                        onOpen: () => _info(hero.itemId, hero.serverId),
+                        buttons: (expand) => expand
+                            ? [
+                                Expanded(
+                                  child: CineButton(
+                                    focusNode: _heroPlayFocus,
+                                    icon: Icons.play_arrow_rounded,
+                                    label: l10n.play,
+                                    primary: true,
+                                    expand: true,
+                                    onTap: () =>
+                                        _play(hero.itemId, hero.serverId),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: CineFavoriteButton(
+                                    itemId: hero.itemId,
+                                    expand: true,
+                                  ),
+                                ),
+                              ]
+                            : [
+                                CineButton(
+                                  focusNode: _heroPlayFocus,
+                                  icon: Icons.play_arrow_rounded,
+                                  label: l10n.play,
+                                  primary: true,
+                                  onUpEdge: upEdge,
+                                  onLeftEdge: leftEdge,
+                                  onTap: () => _play(hero.itemId, hero.serverId),
+                                ),
+                                const SizedBox(width: 12),
+                                CineButton(
+                                  icon: Icons.info_outline_rounded,
+                                  label: cineText(context, 'Más info', 'More info'),
+                                  primary: false,
+                                  onUpEdge: upEdge,
+                                  onTap: () => _info(hero.itemId, hero.serverId),
+                                ),
+                                const SizedBox(width: 12),
+                                CineFavoriteButton(
+                                  itemId: hero.itemId,
+                                  onUpEdge: upEdge,
+                                ),
+                              ],
                       ),
               ),
               if (loading)
