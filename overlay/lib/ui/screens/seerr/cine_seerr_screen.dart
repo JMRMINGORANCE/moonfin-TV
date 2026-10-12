@@ -138,6 +138,21 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
     context.push(uri.toString());
   }
 
+  /// Porcentaje descargado, si Seerr lo sabe (Radarr/Sonarr conectados).
+  String? _progress(SeerrDiscoverItem i) {
+    final list = i.mediaInfo?.downloadStatus;
+    if (list == null || list.isEmpty) return null;
+    var size = 0;
+    var left = 0;
+    for (final d in list) {
+      size += d.size ?? 0;
+      left += d.sizeLeft ?? 0;
+    }
+    if (size <= 0) return null;
+    final pct = ((size - left) * 100 / size).clamp(0, 99).round();
+    return '$pct %';
+  }
+
   CineTile _tile(SeerrDiscoverItem i) {
     final status = i.mediaInfo?.status;
     String? badge;
@@ -149,7 +164,9 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
       badge = cineText(context, 'PARCIAL', 'PARTIAL');
       color = const Color(0xFF2C7BE5);
     } else if (status == 2 || status == 3) {
-      badge = cineText(context, 'DESCARGANDO', 'DOWNLOADING');
+      final progress = _progress(i);
+      badge = cineText(context, 'DESCARGANDO', 'DOWNLOADING') +
+          (progress == null ? '' : ' $progress');
       color = const Color(0xFFD08A00);
     }
     return CineTile(
