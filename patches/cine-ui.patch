@@ -162,10 +162,56 @@ index 1b3cbfb..79c293d 100644
    BottomNavTab.genres,
    BottomNavTab.folders,
  ];
+diff --git a/lib/preference/home_section_config.dart b/lib/preference/home_section_config.dart
+index b6af477..fd59163 100644
+--- a/lib/preference/home_section_config.dart
++++ b/lib/preference/home_section_config.dart
+@@ -358,17 +358,17 @@ class HomeSectionConfig {
+     // next sync kept bringing it back.
+     HomeSectionConfig(
+       type: HomeSectionType.sinceYouWatched1,
+-      enabled: false,
++      enabled: true,
+       order: 40,
+     ),
+     HomeSectionConfig(
+       type: HomeSectionType.sinceYouWatched2,
+-      enabled: false,
++      enabled: true,
+       order: 41,
+     ),
+     HomeSectionConfig(
+       type: HomeSectionType.sinceYouWatched3,
+-      enabled: false,
++      enabled: true,
+       order: 42,
+     ),
+     HomeSectionConfig(
 diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
-index 654dc28..51ce215 100644
+index 654dc28..8a048fc 100644
 --- a/lib/preference/user_preferences.dart
 +++ b/lib/preference/user_preferences.dart
+@@ -1229,17 +1229,17 @@ class UserPreferences extends ChangeNotifier {
+ 
+   static final sinceYouWatched1Enabled = Preference(
+     key: 'since_you_watched_1_enabled',
+-    defaultValue: false,
++    defaultValue: true,
+   );
+ 
+   static final sinceYouWatched2Enabled = Preference(
+     key: 'since_you_watched_2_enabled',
+-    defaultValue: false,
++    defaultValue: true,
+   );
+ 
+   static final sinceYouWatched3Enabled = Preference(
+     key: 'since_you_watched_3_enabled',
+-    defaultValue: false,
++    defaultValue: true,
+   );
+ 
+   static final sinceYouWatched4Enabled = Preference(
 @@ -1553,7 +1553,7 @@ class UserPreferences extends ChangeNotifier {
    /// because it syncs to that server's profile.
    static final detailScreenStyle = EnumPreference(
@@ -213,6 +259,15 @@ index 654dc28..51ce215 100644
    );
    static final fallbackAudioLanguage = Preference<String>(
      key: 'pref_fallback_audio_language',
+@@ -2394,7 +2399,7 @@ class UserPreferences extends ChangeNotifier {
+ 
+   static final subtitleMode = EnumPreference(
+     key: 'pref_subtitle_mode',
+-    defaultValue: SubtitleMode.flagged,
++    defaultValue: SubtitleMode.none,
+     values: SubtitleMode.values,
+   );
+ 
 @@ -2609,9 +2614,8 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarMode = Preference(
@@ -317,6 +372,99 @@ index 737a511..4e427ce 100644
      ),
      GoRoute(
        path: Destinations.seerrRequests,
+diff --git a/lib/ui/screens/auth/server_screen.dart b/lib/ui/screens/auth/server_screen.dart
+index e01a8ff..345d3c8 100644
+--- a/lib/ui/screens/auth/server_screen.dart
++++ b/lib/ui/screens/auth/server_screen.dart
+@@ -1,4 +1,5 @@
+ import 'package:flutter/material.dart';
++import 'package:flutter_svg/flutter_svg.dart';
+ import 'package:get_it/get_it.dart';
+ import 'package:go_router/go_router.dart';
+ import 'package:moonfin_design/moonfin_design.dart';
+@@ -19,6 +20,7 @@ import '../../../util/platform_detection.dart';
+ import '../../navigation/destinations.dart';
+ import '../../widgets/login_scaffold.dart';
+ import '../../widgets/pin_entry_dialog.dart';
++import '../../widgets/cine/cine_widgets.dart';
+ 
+ class ServerScreen extends StatefulWidget {
+   final String serverId;
+@@ -372,7 +374,7 @@ class _ServerScreenState extends State<ServerScreen> {
+ 
+     final listView = SizedBox(
+       width: double.infinity,
+-      height: 130,
++      height: kCineUi ? 172 : 130,
+       child: LayoutBuilder(
+         builder: (context, constraints) {
+           return SingleChildScrollView(
+@@ -438,7 +440,7 @@ class _ServerScreenState extends State<ServerScreen> {
+         return Padding(
+           padding: const EdgeInsets.symmetric(horizontal: 8),
+           child: SizedBox(
+-            width: 110,
++            width: kCineUi ? 132 : 110,
+             child: AnimatedScale(
+               scale: focused ? 1.08 : 1.0,
+               duration: const Duration(milliseconds: 120),
+@@ -453,6 +455,9 @@ class _ServerScreenState extends State<ServerScreen> {
+                   child: Column(
+                     mainAxisSize: MainAxisSize.min,
+                     children: [
++                      if (kCineUi)
++                        _cineAvatar(user, index, focused)
++                      else
+                       Container(
+                         decoration: BoxDecoration(
+                           shape: BoxShape.circle,
+@@ -504,6 +509,46 @@ class _ServerScreenState extends State<ServerScreen> {
+     );
+   }
+ 
++  // TaquitoFlix: avatares cuadrados de colores, como Netflix. Sin foto de
++  // perfil, aparece Taquito.
++  static const _cineAvatarColors = [
++    Color(0xFFE50914),
++    Color(0xFF2C7BE5),
++    Color(0xFFF5B400),
++    Color(0xFF1F9D55),
++    Color(0xFF8E44AD),
++  ];
++
++  Widget _cineAvatar(_MergedUser user, int index, bool focused) {
++    final color = _cineAvatarColors[index % _cineAvatarColors.length];
++    final taquito = Padding(
++      padding: const EdgeInsets.all(10),
++      child: SvgPicture.asset('assets/icons/moonfin_logo.svg'),
++    );
++    return AnimatedContainer(
++      duration: const Duration(milliseconds: 120),
++      width: 100,
++      height: 100,
++      decoration: BoxDecoration(
++        color: color,
++        borderRadius: BorderRadius.circular(8),
++        border: Border.all(
++          color: focused ? Colors.white : Colors.transparent,
++          width: 3,
++        ),
++      ),
++      clipBehavior: Clip.antiAlias,
++      child: user.imageTag != null
++          ? Image.network(
++              _userImageUrl(user),
++              headers: serverImageHeaders,
++              fit: BoxFit.cover,
++              errorBuilder: (_, _, _) => taquito,
++            )
++          : taquito,
++    );
++  }
++
+   @override
+   void dispose() {
+     _scrollController.dispose();
 diff --git a/lib/ui/screens/auth/server_select_screen.dart b/lib/ui/screens/auth/server_select_screen.dart
 index 0faf067..3976660 100644
 --- a/lib/ui/screens/auth/server_select_screen.dart
@@ -384,6 +532,48 @@ index 0faf067..3976660 100644
          serverId: server.id,
          accessToken: credentials.accessToken,
          lastUsed: DateTime.now(),
+diff --git a/lib/ui/screens/auth/startup_screen.dart b/lib/ui/screens/auth/startup_screen.dart
+index 4510b71..16a0a13 100644
+--- a/lib/ui/screens/auth/startup_screen.dart
++++ b/lib/ui/screens/auth/startup_screen.dart
+@@ -7,6 +7,7 @@ import 'package:jellyfin_preference/jellyfin_preference.dart';
+ import 'package:server_core/server_core.dart';
+ 
+ import '../../../auth/repositories/server_repository.dart';
++import '../../../auth/repositories/server_user_repository.dart';
+ import '../../../auth/repositories/session_repository.dart';
+ import '../../../auth/store/authentication_preferences.dart';
+ import '../../../auth/store/credential_store.dart';
+@@ -19,6 +20,7 @@ import '../../widgets/adaptive/adaptive_dialog.dart';
+ import '../../widgets/overlay_sheet.dart';
+ import '../../widgets/pin_entry_dialog.dart';
+ import '../../widgets/focus/request_initial_focus.dart';
++import '../../widgets/cine/cine_widgets.dart';
+ 
+ class StartupScreen extends StatefulWidget {
+   final bool bootstrapActiveSession;
+@@ -126,7 +128,20 @@ class _StartupScreenState extends State<StartupScreen>
+       pinEnabledForAutoLoginUser = pinUtil.isPinEnabled;
+     }
+ 
+-    final restored = (authPrefs.shouldAlwaysAuthenticate || pinEnabledForAutoLoginUser)
++    // TaquitoFlix: con varios perfiles guardados en el servidor, al abrir la
++    // app se pregunta "¿Quién está viendo?" (como Netflix).
++    final askWhoIsWatching = kCineUi &&
++        behavior == UserSelectBehavior.lastUser &&
++        targetServerId != null &&
++        targetServerId.isNotEmpty &&
++        GetIt.instance<ServerUserRepository>()
++                .getStoredServerUsers(targetServerId)
++                .length >
++            1;
++
++    final restored = (authPrefs.shouldAlwaysAuthenticate ||
++            pinEnabledForAutoLoginUser ||
++            askWhoIsWatching)
+         ? false
+         : await session.restoreSession();
+ 
 diff --git a/lib/ui/screens/detail/item_detail_screen.dart b/lib/ui/screens/detail/item_detail_screen.dart
 index ecb75f7..888930e 100644
 --- a/lib/ui/screens/detail/item_detail_screen.dart
@@ -460,20 +650,21 @@ index ecb75f7..888930e 100644
      focusNode: focusNode,
      autofocus: autofocus,
 diff --git a/lib/ui/screens/home/home_screen.dart b/lib/ui/screens/home/home_screen.dart
-index b764fb4..b91ebda 100644
+index b764fb4..633e76f 100644
 --- a/lib/ui/screens/home/home_screen.dart
 +++ b/lib/ui/screens/home/home_screen.dart
-@@ -87,6 +87,9 @@ import 'home_view_model.dart';
+@@ -87,6 +87,10 @@ import 'home_view_model.dart';
  import '../../widgets/seerr/seerr_genre_label.dart';
  import '../../widgets/skeleton/skeleton_home_row.dart';
  import '../../widgets/skeleton/skeleton_shimmer.dart';
 +import '../../widgets/cine/cine_widgets.dart';
++import '../../widgets/cine/cine_favorite_button.dart';
 +
 +part 'cine_home.dart';
  
  Color get _homeBackground => AppColorScheme.background;
  
-@@ -536,10 +539,12 @@ class _HomeShellState extends State<_HomeShell>
+@@ -536,10 +540,12 @@ class _HomeShellState extends State<_HomeShell>
          _showExitConfirmation(context);
        },
        child: Scaffold(
@@ -688,6 +879,26 @@ index 1006910..549abdd 100644
      focusGlow: [],
    ),
  );
+diff --git a/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt b/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt
+index 0589d1c..a4de5ca 100644
+--- a/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt
++++ b/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt
+@@ -4629,6 +4629,15 @@ class Media3VideoView(
+                     null
+                 }
+ 
++            // TaquitoFlix: el servidor ha rechazado el vídeo directo (403, 404,
++            // 5xx…) o ha enviado algo que no es vídeo. Pedirlo transcodificado
++            // va por otra ruta del servidor, así que se intenta una vez antes de
++            // mostrar "Source error".
++            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
++            PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
++            PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
++            -> if (containerFallbackAttempted) null else "unsupported_container"
++
+             else -> null
+         }
+ 
 diff --git a/web/config.json b/web/config.json
 index cb69bb5..9e617d4 100644
 --- a/web/config.json
