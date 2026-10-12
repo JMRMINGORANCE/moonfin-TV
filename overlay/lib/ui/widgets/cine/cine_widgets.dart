@@ -3,16 +3,20 @@
 // con el mando a distancia). Los usan la portada, las bibliotecas, Seerr y la
 // ficha de detalle.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../../data/services/youtube_stream_resolver.dart';
 import '../../../preference/preference_constants.dart';
 import '../../../preference/user_preferences.dart';
 import '../../../util/platform_detection.dart';
 import '../bounded_network_image.dart';
 import '../navigation_layout.dart';
+import '../web_youtube_trailer.dart';
 
 /// Compila con --dart-define=CINE_CLASSIC_UI=true para recuperar las
 /// pantallas originales de Moonfin.
@@ -64,6 +68,20 @@ String cineTmdbImage(String? path, int width) {
   if (path == null || path.isEmpty) return '';
   if (path.startsWith('http')) return path;
   return 'https://image.tmdb.org/t/p/w$width$path';
+}
+
+/// Vídeo de YouTube del primer tráiler, si el usuario quiere avances en la
+/// portada y el dispositivo puede con ellos.
+String? cineTrailerVideoId(List<Map<String, dynamic>> remoteTrailers) {
+  final prefs = GetIt.instance<UserPreferences>();
+  if (!prefs.resolveMediaBarTrailerPreview()) return null;
+  for (final t in remoteTrailers) {
+    final url = t['Url']?.toString();
+    if (url == null || url.isEmpty) continue;
+    final id = YouTubeStreamResolver.extractVideoId(url);
+    if (id != null && id.isNotEmpty) return id;
+  }
+  return null;
 }
 
 String cineRuntime(BuildContext context, int? ticks) {
@@ -828,11 +846,19 @@ class CineHero extends StatelessWidget {
   /// Espacio extra arriba en móvil (para la barra de chips).
   final double mobileTopInset;
 
+  /// Tráiler de YouTube que empieza solo, en silencio, tras unos segundos.
+  final String? trailerVideoId;
+
+  /// Al tocar la carátula en el móvil (abre la ficha).
+  final VoidCallback? onOpen;
+
   const CineHero({
     super.key,
     required this.data,
     required this.buttons,
     this.mobileTopInset = 56,
+    this.trailerVideoId,
+    this.onOpen,
   });
 
   @override
@@ -892,7 +918,9 @@ class CineHero extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Stack(
+            child: GestureDetector(
+              onTap: onOpen,
+              child: Stack(
               fit: StackFit.expand,
               children: [
                 if (image != null && image.isNotEmpty)
@@ -910,6 +938,8 @@ class CineHero extends StatelessWidget {
                   )
                 else
                   const ColoredBox(color: cineCardBg),
+                if (trailerVideoId != null)
+                  _CineTrailerLayer(videoId: trailerVideoId!),
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -953,6 +983,7 @@ class CineHero extends StatelessWidget {
                   ),
                 ),
               ],
+              ),
             ),
           ),
         ),
@@ -982,6 +1013,7 @@ class CineHero extends StatelessWidget {
               fadeInDuration: const Duration(milliseconds: 300),
               errorBuilder: (_, _, _) => const SizedBox.shrink(),
             ),
+          if (trailerVideoId != null) _CineTrailerLayer(videoId: trailerVideoId!),
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -1048,11 +1080,135 @@ class CineHero extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 22),
-                Row(mainAxisSize: MainAxisSize.min, children: buttons(false)),
+                // Si no caben en una línea (pantallas estrechas), bajan a otra.
+                Wrap(
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: buttons(false),
+                ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Tráiler que aparece sobre la imagen de la cabecera: espera unos segundos,
+/// suena en silencio, se funde al empezar y desaparece al terminar o si falla.
+/// Se pausa cuando otra pantalla queda encima.
+class _CineTrailerLayer extends StatefulWidget {
+  final String videoId;
+
+  const _CineTrailerLayer({required this.videoId});
+
+  @override
+  State<_CineTrailerLayer> createState() => _CineTrailerLayerState();
+}
+
+class _CineTrailerLayerState extends State<_CineTrailerLayer> {
+  Timer? _delay;
+  bool _mounted = false;
+  bool _visible = false;
+  bool _finished = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _schedule();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CineTrailerLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoId != widget.videoId) {
+      setState(() {
+        _mounted = false;
+        _visible = false;
+        _finished = false;
+      });
+      _schedule();
+    }
+  }
+
+  void _schedule() {
+    _delay?.cancel();
+    _delay = Timer(const Duration(seconds: 4), () {
+      if (!mounted || _finished) return;
+      // El reproductor tiene que arrancar en primer plano; si hay otra
+      // pantalla encima, se vuelve a intentar más tarde.
+      if (ModalRoute.of(context)?.isCurrent ?? true) {
+        setState(() => _mounted = true);
+      } else {
+        _schedule();
+      }
+    });
+  }
+
+  void _stop() {
+    if (!mounted) return;
+    setState(() {
+      _visible = false;
+      _finished = true;
+    });
+    Timer(const Duration(milliseconds: 700), () {
+      if (mounted && _finished) setState(() => _mounted = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _delay?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_mounted) return const SizedBox.shrink();
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+    return IgnorePointer(
+      child: ExcludeFocus(
+        child: AnimatedOpacity(
+          opacity: _visible && isCurrent ? 1 : 0,
+          duration: const Duration(milliseconds: 700),
+          child: ClipRect(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Recorta el 16:9 para cubrir todo el hueco (como BoxFit.cover)
+                // sin escalar la vista web.
+                final w = constraints.maxWidth;
+                final h = constraints.maxHeight;
+                var vw = w * 1.03;
+                var vh = vw * 9 / 16;
+                if (vh < h * 1.03) {
+                  vh = h * 1.03;
+                  vw = vh * 16 / 9;
+                }
+                return OverflowBox(
+                  minWidth: vw,
+                  maxWidth: vw,
+                  minHeight: vh,
+                  maxHeight: vh,
+                  child: WebYouTubeTrailer(
+                    key: ValueKey('cine_trailer_${widget.videoId}'),
+                    videoId: widget.videoId,
+                    muted: true,
+                    loop: false,
+                    ignorePointer: true,
+                    suspended: !isCurrent,
+                    onPlaybackStarted: () {
+                      if (mounted) setState(() => _visible = true);
+                    },
+                    onCompleted: _stop,
+                    onAutoplayFailed: _stop,
+                    onEmbeddedUnavailable: _stop,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
