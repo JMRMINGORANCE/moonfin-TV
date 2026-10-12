@@ -82,17 +82,10 @@ def rebrand_dart_strings(path: Path):
     return count
 
 
-# Seerr con aprobación automática: en español el botón dice "Descargar".
+# Textos concretos que cambian solo en español (por clave, así no dependen de
+# en qué línea estén y sobreviven a las actualizaciones de Moonfin).
 ES_OVERRIDES = {
-    "request": "Descargar",
-    "request4k": "Descargar en 4K",
-    "requestMore": "Descargar más",
-    "requestMore4k": "Descargar más en 4K",
-    "submitRequest": "Descargar",
-}
-ES_METHOD_OVERRIDES = {
-    "requestSeriesOrMovie": "Descargar {type}",
-    "requestSeriesOrMovie4k": "Descargar {type} en 4K",
+    "libraries": "Mi biblioteca",
 }
 
 
@@ -100,8 +93,8 @@ def spanish_overrides():
     count = 0
     for arb in sorted((SRC / "lib/l10n").glob("app_es*.arb")):
         data = json.loads(arb.read_text(encoding="utf-8"))
-        for key, value in {**ES_OVERRIDES, **ES_METHOD_OVERRIDES}.items():
-            if data.get(key) != value:
+        for key, value in ES_OVERRIDES.items():
+            if key in data and data[key] != value:
                 data[key] = value
                 count += 1
         arb.write_text(
@@ -117,15 +110,8 @@ def spanish_overrides():
                 text,
             )
             count += n
-        for key, value in ES_METHOD_OVERRIDES.items():
-            text, n = re.subn(
-                rf"(String {key}\(String type\) \{{\s*return )'(?:[^'\\]|\\.)*';",
-                lambda m, v=value: f"{m.group(1)}'{v.replace('{type}', '$type')}';",
-                text,
-            )
-            count += n
         dart.write_text(text, encoding="utf-8")
-    log(f"textos de Seerr en español cambiados a Descargar: {count}")
+    log(f"textos en español ajustados: {count}")
 
 
 def rebrand_translations():
