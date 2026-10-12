@@ -143,7 +143,7 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
     String? badge;
     var color = cineRed;
     if (status == 5) {
-      badge = cineText(context, 'DISPONIBLE', 'AVAILABLE');
+      badge = cineText(context, 'YA DESCARGADA', 'DOWNLOADED');
       color = const Color(0xFF1F9D55);
     } else if (status == 4) {
       badge = cineText(context, 'PARCIAL', 'PARTIAL');

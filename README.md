@@ -9,7 +9,7 @@ Basado en [Moonfin](https://github.com/Moonfin-Client/Moonfin-Core) (GPL-2.0). E
 - `branding/`: dibujo de Taquito (`taquito_head.svg`), logotipo (`taquitoflix_wordmark.svg`) y `rebrand.py`, que en cada compilación cambia los textos a TaquitoFlix y genera todos los iconos, banners y pantallas de carga.
 - `tizen/`: empaquetado para Samsung.
 
-GitHub Actions descarga un commit concreto de Moonfin, aplica el parche, copia `overlay/`, ejecuta `branding/rebrand.py` y compila.
+GitHub Actions descarga la versión de Moonfin indicada en `UPSTREAM_REF`, aplica el parche, copia `overlay/`, ejecuta `branding/rebrand.py` y compila.
 
 ## Qué trae
 
@@ -17,11 +17,22 @@ GitHub Actions descarga un commit concreto de Moonfin, aplica el parche, copia `
 - **Idioma**: español por defecto en la interfaz, el audio y los subtítulos.
 - **Inicio**: cabecera destacada, *Seguir viendo*, **Lo último añadido** (de todas las bibliotecas, con etiqueta NUEVO), *Top 10* y el resto de filas.
 - **Bibliotecas**: siempre ordenadas con lo último añadido primero (también la rejilla de *Ver todo*). Seerr mantiene su propio orden.
-- **Seerr**: todas las categorías del explorador (tendencias, populares, próximos estrenos, géneros, estudios, cadenas, lista de seguimiento y las filas creadas en Seerr) directamente en su pantalla. Sin solicitudes ni problemas: con la aprobación automática, el botón de películas y series dice **Descargar**.
+- **Seerr**: todas las categorías del explorador (tendencias, populares, próximos estrenos, géneros, estudios, cadenas, lista de seguimiento y las filas creadas en Seerr) directamente en su pantalla, con etiqueta **YA DESCARGADA** en lo que ya tienes. Sin solicitudes ni problemas: con la aprobación automática, el botón de películas y series dice **Descargar**.
+- **Ajustes**: menú reducido (idioma y subtítulos, reproducción, portada, descargas, cuenta, Seerr, avanzados y acerca de). Sin asistente de bienvenida.
 - **Ficha de detalle** y navegación con mando al estilo de las plataformas de streaming.
 - **Android**: id `es.josemingorance.taquitoflix`, nombre *TaquitoFlix*.
 
 Lo que conserva el nombre Moonfin a propósito: las rutas y mensajes del plugin Moonfin de tu servidor (`/Moonfin/...`), el nombre con el que la app se presenta al servidor y los nombres internos del código. Cambiarlos rompería Seerr y la sincronización con el plugin.
+
+## Actualizar Moonfin sin romper la interfaz
+
+- El código de TaquitoFlix vive casi todo en archivos propios (`overlay/`, `branding/`), que Moonfin nunca toca. El parche sobre archivos de Moonfin es pequeño y los textos se cambian por clave en `rebrand.py`, no por línea.
+- La versión de Moonfin está fijada en `UPSTREAM_REF`: una actualización de Moonfin nunca entra sola en las apps.
+- Cada lunes, la tarea **Actualizar base de Moonfin** comprueba si hay cambios. Si los hay, aplica la interfaz encima (con fusión de 3 vías) y comprueba que todo compila:
+  - **Si encaja**: guarda la nueva versión en `UPSTREAM_REF`, regenera el parche y lanza la compilación. Sale una Release nueva sin hacer nada.
+  - **Si no encaja**: no toca nada, las apps siguen con la versión anterior y se abre un aviso (*Issue*) con el detalle para corregirlo.
+- También se puede lanzar a mano desde *Actions → Actualizar base de Moonfin → Run workflow*.
+- Para volver a la versión anterior de Moonfin basta con restaurar el valor previo de `UPSTREAM_REF` (está en el historial).
 
 ## Descargas
 
