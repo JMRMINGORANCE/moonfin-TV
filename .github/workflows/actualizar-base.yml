@@ -1,0 +1,128 @@
+name: Actualizar base de Moonfin
+
+# Cada lunes comprueba si Moonfin ha publicado cambios. Si los hay, aplica
+# encima la interfaz TaquitoFlix y comprueba que todo compila:
+#   - Si encaja: guarda la nueva versión y lanza la compilación de las apps.
+#   - Si no encaja: no toca nada (las apps siguen con la versión anterior) y
+#     abre un aviso (issue) con el detalle para corregirlo.
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+env:
+  UPSTREAM_REPO: https://github.com/Moonfin-Client/Moonfin-Core.git
+  UPSTREAM_BRANCH: main
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Comprobar si hay una versión nueva de Moonfin
+        id: version
+        run: |
+          ACTUAL=$(tr -d '[:space:]' < UPSTREAM_REF)
+          NUEVA=$(git ls-remote "$UPSTREAM_REPO" "refs/heads/$UPSTREAM_BRANCH" | cut -f1)
+          echo "actual=$ACTUAL" >> "$GITHUB_OUTPUT"
+          echo "nueva=$NUEVA" >> "$GITHUB_OUTPUT"
+          if [ -z "$NUEVA" ] || [ "$ACTUAL" = "$NUEVA" ]; then
+            echo "Moonfin no ha cambiado."
+            echo "hay=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "Moonfin ha cambiado: $ACTUAL -> $NUEVA"
+            echo "hay=si" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Aplicar la interfaz TaquitoFlix sobre la versión nueva
+        if: steps.version.outputs.hay == 'si'
+        id: aplicar
+        run: |
+          git clone -q --filter=blob:none "$UPSTREAM_REPO" src
+          cd src
+          git checkout -q "${{ steps.version.outputs.nueva }}"
+          if ! git apply --3way --whitespace=nowarn ../patches/cine-ui.patch > ../aplicar.log 2>&1; then
+            echo "resultado=conflicto" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # El parche rehecho sobre la versión nueva (antes de copiar overlay/).
+          git diff HEAD > ../cine-ui.nuevo.patch
+          cp -r ../overlay/. .
+          FV=$(grep -m1 "FLUTTER_VERSION:" .github/workflows/build.yml | sed "s/.*FLUTTER_VERSION:[[:space:]]*//; s/['\"]//g" | tr -d '[:space:]' || true)
+          echo "FLUTTER_VERSION=${FV:-3.47.2}" >> "$GITHUB_ENV"
+          echo "resultado=aplicado" >> "$GITHUB_OUTPUT"
+
+      - name: Marca TaquitoFlix
+        if: steps.aplicar.outputs.resultado == 'aplicado'
+        working-directory: src
+        run: |
+          sudo apt-get install -y -qq libcairo2 > /dev/null
+          python3 -m pip install --quiet cairosvg pillow
+          python3 ../branding/rebrand.py
+
+      - uses: subosito/flutter-action@v2
+        if: steps.aplicar.outputs.resultado == 'aplicado'
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Comprobar que todo compila
+        if: steps.aplicar.outputs.resultado == 'aplicado'
+        id: compilar
+        working-directory: src
+        run: |
+          if ! flutter pub get > ../analisis.log 2>&1; then
+            echo "resultado=error" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if flutter analyze --no-fatal-infos --no-fatal-warnings lib >> ../analisis.log 2>&1; then
+            echo "resultado=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "resultado=error" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Guardar la nueva versión y compilar las apps
+        if: steps.compilar.outputs.resultado == 'ok'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NUEVA="${{ steps.version.outputs.nueva }}"
+          cp cine-ui.nuevo.patch patches/cine-ui.patch
+          echo "$NUEVA" > UPSTREAM_REF
+          git config user.name "TaquitoFlix bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add UPSTREAM_REF patches/cine-ui.patch
+          git commit -m "Actualizar base de Moonfin a ${NUEVA:0:7}"
+          git push
+          gh workflow run build.yml --ref main
+
+      - name: Avisar si algo no encaja
+        if: steps.aplicar.outputs.resultado == 'conflicto' || steps.compilar.outputs.resultado == 'error'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NUEVA="${{ steps.version.outputs.nueva }}"
+          TITULO="Actualizar Moonfin: revisar ${NUEVA:0:7}"
+          if gh issue list --state open --search "in:title $TITULO" --json number --jq '.[].number' | grep -q .; then
+            echo "Ya hay un aviso abierto para esta versión."
+            exit 0
+          fi
+          {
+            echo "Moonfin ha publicado cambios (commit \`${NUEVA:0:7}\`) que no encajan solos con la interfaz de TaquitoFlix."
+            echo
+            echo "No se ha tocado nada: las apps siguen compilándose con la versión anterior."
+            echo
+            echo "Pásale este aviso a Claude para que adapte el parche."
+            echo
+            echo '```'
+            tail -n 80 aplicar.log analisis.log 2>/dev/null || true
+            echo '```'
+          } > aviso.md
+          gh issue create --title "$TITULO" --body-file aviso.md

@@ -10,26 +10,31 @@ permissions:
 
 env:
   UPSTREAM_REPO: https://github.com/Moonfin-Client/Moonfin-Core.git
-  # Commit de Moonfin sobre el que se aplica el parche. Para actualizar a una
-  # versión nueva de Moonfin, cambia este SHA y regenera patches/cine-ui.patch.
-  UPSTREAM_REF: a80f16524ca84f127da62a1ff56fdb9caa07fd7f
-  FLUTTER_VERSION: '3.47.2'
+  # La versión de Moonfin que se usa está en el archivo UPSTREAM_REF del repo.
+  # La actualiza sola la tarea "Actualizar base de Moonfin".
 
 jobs:
   android:
     name: Android + Android TV (APK)
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.apk.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Descargar el código base y aplicar el parche
         run: |
+          UPSTREAM_REF=$(tr -d '[:space:]' < UPSTREAM_REF)
+          echo "UPSTREAM_REF=$UPSTREAM_REF" >> "$GITHUB_ENV"
           git init -q src && cd src
           git remote add origin "$UPSTREAM_REPO"
           git fetch -q --depth 1 origin "$UPSTREAM_REF"
           git checkout -q FETCH_HEAD
           git apply --whitespace=nowarn ../patches/*.patch
           cp -r ../overlay/. .
+          # La misma versión de Flutter que usa esa versión de Moonfin.
+          FV=$(grep -m1 "FLUTTER_VERSION:" .github/workflows/build.yml | sed "s/.*FLUTTER_VERSION:[[:space:]]*//; s/['\"]//g" | tr -d '[:space:]' || true)
+          echo "FLUTTER_VERSION=${FV:-3.47.2}" >> "$GITHUB_ENV"
 
       - name: Marca TaquitoFlix (textos, iconos y logos)
         working-directory: src
@@ -63,29 +68,35 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
           cat > android/keystore.properties <<PROPS
           storeFile=../release.keystore
+          storeType=PKCS12
           storePassword=$STORE_PASSWORD
           keyAlias=$KEY_ALIAS
           keyPassword=$KEY_PASSWORD
           PROPS
 
       - name: Compilar APKs
+        id: apk
         working-directory: src
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '[:space:]')
           BUILD=$(grep '^version:' pubspec.yaml | cut -d'+' -f2 | tr -d '[:space:]')
           TV_VERSION=$(grep '^\s*android_tv_version:' pubspec.yaml | sed 's/.*:[[:space:]]*//' | tr -d '[:space:]')
           TV_BUILD=$(grep '^\s*android_tv_build_number:' pubspec.yaml | sed 's/.*:[[:space:]]*//' | tr -d '[:space:]')
+          # Cada compilación lleva un número propio que siempre crece, para que
+          # Android acepte la actualización y la app sepa que hay versión nueva.
+          RUN=${{ github.run_number }}
+          echo "version=${VERSION}.${RUN}" >> "$GITHUB_OUTPUT"
           flutter pub get
           flutter build apk --release --flavor mobile \
-            --build-name "$VERSION" --build-number "$BUILD" \
+            --build-name "${VERSION}.${RUN}" --build-number "$((BUILD + RUN))" \
             --dart-define=DISTRIBUTION_CHANNEL=apk
           flutter build apk --release --flavor androidTv \
-            --build-name "$TV_VERSION" --build-number "$TV_BUILD" \
+            --build-name "${TV_VERSION}.${RUN}" --build-number "$((TV_BUILD + RUN))" \
             --dart-define=MOONFIN_FORCE_TV=true \
             --dart-define=DISTRIBUTION_CHANNEL=android_tv_apk
           mkdir -p ../out
-          cp build/app/outputs/flutter-apk/app-mobile-release.apk "../out/TaquitoFlix_Android_v${VERSION}.apk"
-          cp build/app/outputs/flutter-apk/app-androidtv-release.apk "../out/TaquitoFlix_AndroidTV_v${TV_VERSION}.apk"
+          cp build/app/outputs/flutter-apk/app-mobile-release.apk "../out/TaquitoFlix_Android_v${VERSION}.${RUN}.apk"
+          cp build/app/outputs/flutter-apk/app-androidtv-release.apk "../out/TaquitoFlix_AndroidTV_v${TV_VERSION}.${RUN}.apk"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -100,12 +111,17 @@ jobs:
 
       - name: Descargar el código base y aplicar el parche
         run: |
+          UPSTREAM_REF=$(tr -d '[:space:]' < UPSTREAM_REF)
+          echo "UPSTREAM_REF=$UPSTREAM_REF" >> "$GITHUB_ENV"
           git init -q src && cd src
           git remote add origin "$UPSTREAM_REPO"
           git fetch -q --depth 1 origin "$UPSTREAM_REF"
           git checkout -q FETCH_HEAD
           git apply --whitespace=nowarn ../patches/*.patch
           cp -r ../overlay/. .
+          # La misma versión de Flutter que usa esa versión de Moonfin.
+          FV=$(grep -m1 "FLUTTER_VERSION:" .github/workflows/build.yml | sed "s/.*FLUTTER_VERSION:[[:space:]]*//; s/['\"]//g" | tr -d '[:space:]' || true)
+          echo "FLUTTER_VERSION=${FV:-3.47.2}" >> "$GITHUB_ENV"
 
       - name: Marca TaquitoFlix (textos, iconos y logos)
         working-directory: src
@@ -178,14 +194,16 @@ jobs:
     needs: [android, tizen]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - run: echo "UPSTREAM_REF=$(tr -d '[:space:]' < UPSTREAM_REF)" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: taquitoflix-build-${{ github.run_number }}
-          name: TaquitoFlix – build ${{ github.run_number }}
+          tag_name: v${{ needs.android.outputs.version }}
+          name: TaquitoFlix ${{ needs.android.outputs.version }}
           body: |
             APKs para Android y Android TV, y paquete WGT para televisores Samsung (Tizen).
             Basado en Moonfin-Core@${{ env.UPSTREAM_REF }} (GPL-2.0).
