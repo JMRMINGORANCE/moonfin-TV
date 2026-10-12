@@ -237,6 +237,20 @@ class _CinePlaybackScreen extends StatelessWidget {
               ),
             ],
           ),
+          _SectionHeader(t('Portada', 'Home screen')),
+          adaptiveListSection(
+            children: [
+              SwitchPreferenceTile(
+                preference: UserPreferences.mediaBarTrailerPreview,
+                title: t('Tráiler automático', 'Autoplay trailers'),
+                subtitle: t(
+                  'En la cabecera de la portada, sin sonido',
+                  'In the Home header, muted',
+                ),
+                icon: Icons.movie_filter,
+              ),
+            ],
+          ),
           _SectionHeader(t('Series', 'Series')),
           adaptiveListSection(
             children: [

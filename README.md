@@ -14,12 +14,15 @@ GitHub Actions descarga la versión de Moonfin indicada en `UPSTREAM_REF`, aplic
 ## Qué trae
 
 - **Servidor**: en el primer arranque se conecta solo a `https://tv.josemingorance.es`; también aparece ya escrito al añadir un servidor.
-- **Idioma**: español por defecto en la interfaz, el audio y los subtítulos.
-- **Inicio**: cabecera destacada, *Seguir viendo*, **Lo último añadido** (de todas las bibliotecas, con etiqueta NUEVO), *Top 10* y el resto de filas.
+- **Idioma**: interfaz y audio en español por defecto, sin subtítulos (se activan en Ajustes → Idioma y subtítulos).
+- **¿Quién está viendo?**: con varios perfiles guardados, se elige perfil al abrir la app; avatares de colores y Taquito si no hay foto.
+- **Inicio**: cabecera destacada con **tráiler automático** (en silencio) y botones Reproducir, Más info y **Mi lista**; *Seguir viendo*, **Lo último añadido** (con etiqueta NUEVO), *Top 10*, filas **Porque viste…** y el resto.
 - **Bibliotecas**: siempre ordenadas con lo último añadido primero (también la rejilla de *Ver todo*). Seerr mantiene su propio orden.
-- **Seerr**: todas las categorías del explorador (tendencias, populares, próximos estrenos, géneros, estudios, cadenas, lista de seguimiento y las filas creadas en Seerr) directamente en su pantalla, con etiqueta **YA DESCARGADA** en lo que ya tienes. Sin solicitudes ni problemas: con la aprobación automática, el botón de películas y series dice **Descargar**.
+- **Seerr**: todas las categorías del explorador (tendencias, populares, próximos estrenos, géneros, estudios, cadenas, lista de seguimiento y las filas creadas en Seerr) directamente en su pantalla, con etiqueta **YA DESCARGADA** en lo que ya tienes y **DESCARGANDO 45 %** mientras se descarga (si Seerr está conectado a Radarr/Sonarr). Sin solicitudes ni problemas: con la aprobación automática, el botón de películas y series dice **Descargar**.
 - **Ajustes**: menú reducido (idioma y subtítulos, reproducción, portada, descargas, cuenta, Seerr, avanzados y acerca de). Sin asistente de bienvenida.
-- **Ficha de detalle** y navegación con mando al estilo de las plataformas de streaming.
+- **Reproducción**: si el servidor rechaza el vídeo directo, la app lo pide transcodificado antes de mostrar un error. Botón de saltar intro y créditos.
+- **Actualizaciones**: cada compilación tiene un número que crece (`v2.7.0.N`) y la app avisa sola de que hay versión nueva.
+- **Ficha de detalle** y navegación con mando al estilo de las plataformas de streaming. Android TV muestra *Seguir viendo* en la pantalla de inicio de la tele.
 - **Android**: id `es.josemingorance.taquitoflix`, nombre *TaquitoFlix*.
 
 Lo que conserva el nombre Moonfin a propósito: las rutas y mensajes del plugin Moonfin de tu servidor (`/Moonfin/...`), el nombre con el que la app se presenta al servidor y los nombres internos del código. Cambiarlos rompería Seerr y la sincronización con el plugin.
@@ -36,7 +39,7 @@ Lo que conserva el nombre Moonfin a propósito: las rutas y mensajes del plugin 
 
 ## Descargas
 
-Cada compilación publica una **Release** con `TaquitoFlix_Android_v*.apk`, `TaquitoFlix_AndroidTV_v*.apk` y `TaquitoFlix_Tizen_v*_sin-firmar.wgt`.
+Cada compilación publica una **Release** `vX.Y.Z.N` con `TaquitoFlix_Android_v*.apk`, `TaquitoFlix_AndroidTV_v*.apk` y `TaquitoFlix_Tizen_v*_sin-firmar.wgt`.
 
 ## Samsung (Tizen)
 
