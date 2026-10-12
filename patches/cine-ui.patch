@@ -1,5 +1,5 @@
 diff --git a/android/app/build.gradle.kts b/android/app/build.gradle.kts
-index 6dd414e..bd9ec5a 100644
+index 6dd414e8..bd9ec5a8 100644
 --- a/android/app/build.gradle.kts
 +++ b/android/app/build.gradle.kts
 @@ -35,7 +35,7 @@ plugins {
@@ -23,7 +23,7 @@ index 6dd414e..bd9ec5a 100644
          // environment so an unset build is byte-identical to before:
          //   MOONFIN_TEST_ID_SUFFIX=.hwtest flutter build apk --flavor androidTv --debug
 diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
-index d7552fc..f94ea4e 100644
+index d7552fcb..f94ea4eb 100644
 --- a/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
 +++ b/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
 @@ -183,7 +183,7 @@ class DlnaController(private val context: Context) {
@@ -36,7 +36,7 @@ index d7552fc..f94ea4e 100644
  
          if (targetId.isNullOrEmpty() || streamUrl.isNullOrEmpty()) {
 diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
-index d1293d6..7868f48 100644
+index d1293d64..7868f48e 100644
 --- a/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
 +++ b/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
 @@ -1261,7 +1261,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
@@ -67,7 +67,7 @@ index d1293d6..7868f48 100644
              posterUrl = posterUrl,
          )
 diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt
-index a37db9d..73e7d17 100644
+index a37db9da..73e7d17b 100644
 --- a/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt
 +++ b/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt
 @@ -13,7 +13,7 @@ class MediaStoreHelper(private val context: Context) : MethodChannel.MethodCallH
@@ -80,7 +80,7 @@ index a37db9d..73e7d17 100644
  
      override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
 diff --git a/lib/data/services/app_update_service.dart b/lib/data/services/app_update_service.dart
-index fdaa6db..8c6fafd 100644
+index fdaa6dba..8c6fafdd 100644
 --- a/lib/data/services/app_update_service.dart
 +++ b/lib/data/services/app_update_service.dart
 @@ -47,7 +47,7 @@ class AppUpdateService {
@@ -102,7 +102,7 @@ index fdaa6db..8c6fafd 100644
        final assetsJson = decoded['assets'];
        final assets = <_ReleaseAsset>[];
 diff --git a/lib/data/services/media_store_service.dart b/lib/data/services/media_store_service.dart
-index 5cce0e8..b87aa57 100644
+index 5cce0e87..b87aa57d 100644
 --- a/lib/data/services/media_store_service.dart
 +++ b/lib/data/services/media_store_service.dart
 @@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
@@ -115,7 +115,7 @@ index 5cce0e8..b87aa57 100644
      final path = await _channel.invokeMethod<String>('getMediaStorePath');
      return path!;
 diff --git a/lib/data/viewmodels/library_browse_view_model.dart b/lib/data/viewmodels/library_browse_view_model.dart
-index 5036d73..a44a56c 100644
+index 5036d73e..a44a56c4 100644
 --- a/lib/data/viewmodels/library_browse_view_model.dart
 +++ b/lib/data/viewmodels/library_browse_view_model.dart
 @@ -421,8 +421,10 @@ class LibraryBrowseViewModel extends ChangeNotifier {
@@ -132,7 +132,7 @@ index 5036d73..a44a56c 100644
      _likedFilter = _prefs.get(UserPreferences.libraryLikedFilter(_prefKey));
      _seriesFilter = _prefs.get(UserPreferences.librarySeriesFilter(_prefKey));
 diff --git a/lib/platform/web_runtime_config_model.dart b/lib/platform/web_runtime_config_model.dart
-index d424c89..f8f994b 100644
+index d424c89e..f8f994b0 100644
 --- a/lib/platform/web_runtime_config_model.dart
 +++ b/lib/platform/web_runtime_config_model.dart
 @@ -22,7 +22,7 @@ class WebRuntimeConfig {
@@ -145,7 +145,7 @@ index d424c89..f8f994b 100644
      forcedServerUrl: null,
    );
 diff --git a/lib/preference/bottom_nav_tabs.dart b/lib/preference/bottom_nav_tabs.dart
-index 1b3cbfb..79c293d 100644
+index 1b3cbfb0..79c293d2 100644
 --- a/lib/preference/bottom_nav_tabs.dart
 +++ b/lib/preference/bottom_nav_tabs.dart
 @@ -9,11 +9,11 @@ const int kMaxPinnedBottomNavTabs = 3;
@@ -163,7 +163,7 @@ index 1b3cbfb..79c293d 100644
    BottomNavTab.folders,
  ];
 diff --git a/lib/preference/home_section_config.dart b/lib/preference/home_section_config.dart
-index b6af477..fd59163 100644
+index b6af4771..fd59163c 100644
 --- a/lib/preference/home_section_config.dart
 +++ b/lib/preference/home_section_config.dart
 @@ -358,17 +358,17 @@ class HomeSectionConfig {
@@ -188,7 +188,7 @@ index b6af477..fd59163 100644
      ),
      HomeSectionConfig(
 diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
-index 654dc28..e626404 100644
+index 654dc283..e626404d 100644
 --- a/lib/preference/user_preferences.dart
 +++ b/lib/preference/user_preferences.dart
 @@ -808,7 +808,11 @@ class UserPreferences extends ChangeNotifier {
@@ -329,7 +329,7 @@ index 654dc28..e626404 100644
        );
  
 diff --git a/lib/ui/navigation/app_router.dart b/lib/ui/navigation/app_router.dart
-index 737a511..84599d3 100644
+index 737a5111..84599d3f 100644
 --- a/lib/ui/navigation/app_router.dart
 +++ b/lib/ui/navigation/app_router.dart
 @@ -27,6 +27,10 @@ import '../screens/browse/collection_screen.dart';
@@ -398,7 +398,7 @@ index 737a511..84599d3 100644
      GoRoute(
        path: Destinations.seerrRequests,
 diff --git a/lib/ui/screens/auth/server_screen.dart b/lib/ui/screens/auth/server_screen.dart
-index e01a8ff..345d3c8 100644
+index e01a8ff7..345d3c8f 100644
 --- a/lib/ui/screens/auth/server_screen.dart
 +++ b/lib/ui/screens/auth/server_screen.dart
 @@ -1,4 +1,5 @@
@@ -491,7 +491,7 @@ index e01a8ff..345d3c8 100644
    void dispose() {
      _scrollController.dispose();
 diff --git a/lib/ui/screens/auth/server_select_screen.dart b/lib/ui/screens/auth/server_select_screen.dart
-index 0faf067..3976660 100644
+index 0faf0675..39766608 100644
 --- a/lib/ui/screens/auth/server_select_screen.dart
 +++ b/lib/ui/screens/auth/server_select_screen.dart
 @@ -32,6 +32,7 @@ import '../../widgets/allow_self_signed_dialog.dart';
@@ -558,7 +558,7 @@ index 0faf067..3976660 100644
          accessToken: credentials.accessToken,
          lastUsed: DateTime.now(),
 diff --git a/lib/ui/screens/auth/startup_screen.dart b/lib/ui/screens/auth/startup_screen.dart
-index 4510b71..16a0a13 100644
+index 4510b710..16a0a131 100644
 --- a/lib/ui/screens/auth/startup_screen.dart
 +++ b/lib/ui/screens/auth/startup_screen.dart
 @@ -7,6 +7,7 @@ import 'package:jellyfin_preference/jellyfin_preference.dart';
@@ -600,7 +600,7 @@ index 4510b71..16a0a13 100644
          : await session.restoreSession();
  
 diff --git a/lib/ui/screens/detail/item_detail_screen.dart b/lib/ui/screens/detail/item_detail_screen.dart
-index ecb75f7..888930e 100644
+index ecb75f71..888930e5 100644
 --- a/lib/ui/screens/detail/item_detail_screen.dart
 +++ b/lib/ui/screens/detail/item_detail_screen.dart
 @@ -47,6 +47,8 @@ import '../../../preference/detail_section_layout.dart';
@@ -675,7 +675,7 @@ index ecb75f7..888930e 100644
      focusNode: focusNode,
      autofocus: autofocus,
 diff --git a/lib/ui/screens/home/home_screen.dart b/lib/ui/screens/home/home_screen.dart
-index b764fb4..3921722 100644
+index 7099124a..81340923 100644
 --- a/lib/ui/screens/home/home_screen.dart
 +++ b/lib/ui/screens/home/home_screen.dart
 @@ -87,6 +87,11 @@ import 'home_view_model.dart';
@@ -690,7 +690,7 @@ index b764fb4..3921722 100644
  
  Color get _homeBackground => AppColorScheme.background;
  
-@@ -536,10 +541,12 @@ class _HomeShellState extends State<_HomeShell>
+@@ -540,10 +545,12 @@ class _HomeShellState extends State<_HomeShell>
          _showExitConfirmation(context);
        },
        child: Scaffold(
@@ -706,7 +706,7 @@ index b764fb4..3921722 100644
              onReturn: () => _contentRowsKey.currentState?.returnToTop(),
              child: Stack(
 diff --git a/lib/ui/screens/settings/home_row_toggles_screen.dart b/lib/ui/screens/settings/home_row_toggles_screen.dart
-index 968cde2..44f7910 100644
+index 968cde2f..44f7910e 100644
 --- a/lib/ui/screens/settings/home_row_toggles_screen.dart
 +++ b/lib/ui/screens/settings/home_row_toggles_screen.dart
 @@ -626,7 +626,7 @@ class _HomeRowTogglesScreenState extends State<HomeRowTogglesScreen> {
@@ -719,7 +719,7 @@ index 968cde2..44f7910 100644
                        values: SinceYouWatchedSource.values,
                        labelOf: (v) => v.displayName,
 diff --git a/lib/ui/screens/settings/panel/about_category_screen.dart b/lib/ui/screens/settings/panel/about_category_screen.dart
-index 1f0d8c6..5a53604 100644
+index 1f0d8c6a..5a53604c 100644
 --- a/lib/ui/screens/settings/panel/about_category_screen.dart
 +++ b/lib/ui/screens/settings/panel/about_category_screen.dart
 @@ -43,7 +43,7 @@ class _AboutCategoryScreen extends StatelessWidget {
@@ -741,7 +741,7 @@ index 1f0d8c6..5a53604 100644
                  ),
                ),
 diff --git a/lib/ui/screens/settings/settings_side_panel.dart b/lib/ui/screens/settings/settings_side_panel.dart
-index 01793e9..23c61ea 100644
+index 01793e9a..23c61eaf 100644
 --- a/lib/ui/screens/settings/settings_side_panel.dart
 +++ b/lib/ui/screens/settings/settings_side_panel.dart
 @@ -107,6 +107,11 @@ import '../../../preference/detail_section_layout.dart';
@@ -811,7 +811,7 @@ index 01793e9..23c61ea 100644
              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
              child: _SettingsSearchField(
 diff --git a/lib/ui/theme/app_theme_controller.dart b/lib/ui/theme/app_theme_controller.dart
-index ae3e265..ee709bb 100644
+index ae3e265f..ee709bba 100644
 --- a/lib/ui/theme/app_theme_controller.dart
 +++ b/lib/ui/theme/app_theme_controller.dart
 @@ -52,7 +52,7 @@ class AppThemeController extends ChangeNotifier {
@@ -824,7 +824,7 @@ index ae3e265..ee709bb 100644
        VisualThemeId.glass => AppTheme.white,
        VisualThemeId.eightbitHero => AppTheme.eightBitGold,
 diff --git a/lib/ui/widgets/navigation_layout.dart b/lib/ui/widgets/navigation_layout.dart
-index 9698869..88da71b 100644
+index 96988696..88da71b9 100644
 --- a/lib/ui/widgets/navigation_layout.dart
 +++ b/lib/ui/widgets/navigation_layout.dart
 @@ -16,6 +16,7 @@ import 'package:moonfin_design/moonfin_design.dart';
@@ -848,7 +848,7 @@ index 9698869..88da71b 100644
        return NavbarPosition.top;
      }
 diff --git a/lib/util/overlay_color_palette.dart b/lib/util/overlay_color_palette.dart
-index 8376c94..0c46ad4 100644
+index 8376c940..0c46ad4b 100644
 --- a/lib/util/overlay_color_palette.dart
 +++ b/lib/util/overlay_color_palette.dart
 @@ -102,7 +102,7 @@ abstract final class OverlayColorPalette {
@@ -861,7 +861,7 @@ index 8376c94..0c46ad4 100644
        _ => normalizeKey(key),
      };
 diff --git a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart b/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
-index 1006910..549abdd 100644
+index 10069109..549abdd3 100644
 --- a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
 +++ b/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
 @@ -5,45 +5,45 @@ import '../theme_spec.dart';
@@ -929,7 +929,7 @@ index 1006910..549abdd 100644
    ),
  );
 diff --git a/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt b/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt
-index 0589d1c..a4de5ca 100644
+index 0589d1c7..a4de5caa 100644
 --- a/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt
 +++ b/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt
 @@ -4629,6 +4629,15 @@ class Media3VideoView(
@@ -949,7 +949,7 @@ index 0589d1c..a4de5ca 100644
          }
  
 diff --git a/web/config.json b/web/config.json
-index cb69bb5..9e617d4 100644
+index cb69bb5f..9e617d4c 100644
 --- a/web/config.json
 +++ b/web/config.json
 @@ -1,9 +1,9 @@
@@ -965,7 +965,7 @@ index cb69bb5..9e617d4 100644
    "forcedServerUrl": null
  }
 diff --git a/web/index.html b/web/index.html
-index 81f2cd0..9fe985d 100644
+index 81f2cd02..9fe985dd 100644
 --- a/web/index.html
 +++ b/web/index.html
 @@ -6,17 +6,17 @@
@@ -1004,7 +1004,7 @@ index 81f2cd0..9fe985d 100644
    </div>
    <script src="flutter_bootstrap.js" async></script>
 diff --git a/web/manifest.json b/web/manifest.json
-index a117ef9..6711c54 100644
+index a117ef9a..6711c54e 100644
 --- a/web/manifest.json
 +++ b/web/manifest.json
 @@ -1,12 +1,12 @@
