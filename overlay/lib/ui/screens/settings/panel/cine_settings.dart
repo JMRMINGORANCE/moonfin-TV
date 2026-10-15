@@ -507,6 +507,20 @@ class _CineSettingsHome extends StatelessWidget {
                   context.pushSettingsScreen(const HomeRowTogglesScreen()),
             ),
             _CineSettingTile(
+              icon: Icons.history_toggle_off_rounded,
+              title: _t(context, 'Limpiar Seguir viendo', 'Tidy Continue Watching'),
+              value: _t(
+                context,
+                'Oculta lo que llevas más de 3 meses sin ver',
+                'Hides what you have not touched in 3 months',
+              ),
+              switchValue: prefs.get(cineHideStaleResume),
+              onTap: () => prefs.set(
+                cineHideStaleResume,
+                !prefs.get(cineHideStaleResume),
+              ),
+            ),
+            _CineSettingTile(
               icon: Icons.movie_filter,
               title: _t(context, 'Tráiler automático en la portada', 'Autoplay trailers on Home'),
               switchValue: prefs.get(UserPreferences.mediaBarTrailerPreview),

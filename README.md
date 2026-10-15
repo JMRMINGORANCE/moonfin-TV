@@ -23,6 +23,9 @@ GitHub Actions descarga la versión de Moonfin indicada en `UPSTREAM_REF`, aplic
 - **Ajustes**: rediseñados por completo. Tu perfil arriba (cambiar de perfil, cerrar sesión) y secciones claras con el valor actual a la vista: idioma y subtítulos, reproducción (calidad, intros, créditos, siguiente episodio), tu TaquitoFlix (portada, tráileres, descargas, Seerr, PIN), servidor y ayuda. Sin asistente de bienvenida.
 - **Taquito te avisa**: búsquedas sin resultados, servidor o Seerr sin conexión… con el perro y un botón de reintentar en lugar de mensajes técnicos.
 - **Reproducción estilo Netflix**: saltos de 10 s (configurables), barra roja y solo los accesos útiles (Episodios, Audio, Subtítulos, Velocidad, Calidad y Enviar). Si el servidor rechaza el vídeo directo, la app lo pide transcodificado antes de mostrar un error. Botón de saltar intro y créditos.
+- **Siguiente episodio estilo Netflix**: al empezar los créditos (si el servidor los tiene marcados) aparece una tarjeta con la imagen del siguiente episodio, «Ver créditos» y «Siguiente episodio», que se va llenando durante la cuenta atrás.
+- **Seguir viendo limpio**: oculta lo que llevas más de 3 meses sin tocar (se puede desactivar en Ajustes).
+- **Sagas en la portada**: filas automáticas con las colecciones del servidor (Harry Potter, Marvel…), en orden de estreno.
 - **Cabecera viva en la tele**: al moverte por las filas, arriba aparece la imagen, los datos y la sinopsis del título enfocado.
 - **Menú rápido**: mantener pulsada una carátula (o mantener OK en el mando) en *Seguir viendo* ofrece Reproducir, Ver ficha, Quitar de Seguir viendo, Marcar como visto y Más opciones.
 - **Aviso de llegada**: al abrir la app, «Ya puedes ver…» con lo que se descargó desde Seerr mientras estaba cerrada.
