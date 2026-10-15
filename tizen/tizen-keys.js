@@ -1,7 +1,18 @@
-// Moonfin Cine - adaptador del mando de Samsung (Tizen) para Flutter web.
+// TaquitoFlix - adaptador del mando de Samsung (Tizen) para Flutter web.
 // Registra las teclas multimedia y traduce los keyCodes propios de Tizen
 // (Atrás = 10009, Play/Pausa = 10252, ...) a eventos de teclado estándar.
 (function () {
+  // La app llama a esta función para cerrarse (el navegador de la tele no
+  // permite salir con el botón Atrás por sí solo).
+  window.taquitoExit = function () {
+    try {
+      tizen.application.getCurrentApplication().exit();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
   try {
     if (window.tizen && tizen.tvinputdevice) {
       ['MediaPlayPause', 'MediaPlay', 'MediaPause', 'MediaStop',
