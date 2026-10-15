@@ -21,6 +21,7 @@ import '../../../util/seerr_genre_art.dart';
 import '../../navigation/destinations.dart';
 import '../../util/home_row_title_localizer.dart';
 import '../../widgets/bounded_network_image.dart';
+import '../../widgets/cine/cine_empty_state.dart';
 import '../../widgets/cine/cine_widgets.dart';
 import '../../widgets/navigation_layout.dart';
 
@@ -368,19 +369,32 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
               child: Center(child: CircularProgressIndicator(color: cineRed)),
             ),
           ),
-        if (!loading && error != null && rows.isEmpty)
+        if (!loading && rows.isEmpty)
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(48),
-              child: Text(
-                cineText(
-                  context,
-                  'No se ha podido conectar con Seerr.',
-                  'Could not reach Seerr.',
-                ),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: cineMuted, fontSize: 16),
+            child: CineEmptyState(
+              title: error != null
+                  ? cineText(
+                      context,
+                      'Taquito no puede hablar con Seerr',
+                      'Taquito can\'t reach Seerr',
+                    )
+                  : cineText(
+                      context,
+                      'Aquí no hay nada todavía',
+                      'Nothing here yet',
+                    ),
+              message: cineText(
+                context,
+                'Comprueba que Seerr está encendido y conectado en '
+                    'Ajustes → Seerr y servicios.',
+                'Check that Seerr is running and connected in '
+                    'Settings → Seerr and services.',
               ),
+              actionLabel: cineText(context, 'Reintentar', 'Try again'),
+              onAction: () {
+                final v = _vm;
+                if (v != null) unawaited(v.refresh());
+              },
             ),
           ),
         SliverList(delegate: SliverChildListDelegate(rowWidgets)),
