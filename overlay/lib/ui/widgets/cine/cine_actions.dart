@@ -31,3 +31,20 @@ Future<List<AggregatedItem>> cineNewArrivals(List<AggregatedItem> items) async {
   ]..sort((a, b) => created(b)!.compareTo(created(a)!));
   return fresh;
 }
+
+/// "Seguir viendo" esconde lo que llevas más de 3 meses sin tocar.
+final cineHideStaleResume = Preference<bool>(
+  key: 'taquitoflix_hide_stale_resume',
+  defaultValue: true,
+);
+
+const cineStaleResumeAge = Duration(days: 90);
+
+/// Si un título de "Seguir viendo" lleva demasiado tiempo sin reproducirse.
+bool cineIsStaleResume(AggregatedItem item) {
+  final userData = item.rawData['UserData'];
+  if (userData is! Map) return false;
+  final last = DateTime.tryParse(userData['LastPlayedDate']?.toString() ?? '');
+  if (last == null) return false;
+  return DateTime.now().toUtc().difference(last.toUtc()) > cineStaleResumeAge;
+}

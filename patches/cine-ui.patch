@@ -188,7 +188,7 @@ index b6af477..fd59163 100644
      ),
      HomeSectionConfig(
 diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
-index 654dc28..d3f894e 100644
+index 654dc28..a193eed 100644
 --- a/lib/preference/user_preferences.dart
 +++ b/lib/preference/user_preferences.dart
 @@ -808,7 +808,11 @@ class UserPreferences extends ChangeNotifier {
@@ -281,7 +281,18 @@ index 654dc28..d3f894e 100644
      values: SubtitleMode.values,
    );
  
-@@ -2470,7 +2479,8 @@ class UserPreferences extends ChangeNotifier {
+@@ -2453,7 +2462,9 @@ class UserPreferences extends ChangeNotifier {
+ 
+   static final replaceSkipOutroWithNextUp = Preference(
+     key: 'replace_skip_outro_with_next_up',
+-    defaultValue: false,
++    // TaquitoFlix: al empezar los créditos sale "Siguiente episodio", como en
++    // Netflix (si el servidor tiene marcados los créditos).
++    defaultValue: true,
+   );
+ 
+   static final skipBackLength = Preference(
+@@ -2470,7 +2481,8 @@ class UserPreferences extends ChangeNotifier {
  
    static final skipForwardLength = Preference(
      key: 'skipForwardLength',
@@ -291,7 +302,7 @@ index 654dc28..d3f894e 100644
    );
  
    static final unpauseRewindDuration = Preference(
-@@ -2528,15 +2538,18 @@ class UserPreferences extends ChangeNotifier {
+@@ -2528,15 +2540,18 @@ class UserPreferences extends ChangeNotifier {
    );
    static final osdButtonOrderTv = Preference(
      key: 'osdButtonOrderTv',
@@ -313,7 +324,7 @@ index 654dc28..d3f894e 100644
    );
    static final hiddenDetailButtonsTv = Preference(
      key: 'hiddenDetailButtonsTv',
-@@ -2592,15 +2605,18 @@ class UserPreferences extends ChangeNotifier {
+@@ -2592,15 +2607,18 @@ class UserPreferences extends ChangeNotifier {
    );
    static final hiddenOsdButtonsTv = Preference(
      key: 'hiddenOsdButtonsTv',
@@ -335,7 +346,7 @@ index 654dc28..d3f894e 100644
    );
    static final mediaBarEnabled = Preference(
      key: 'mediaBarEnabled',
-@@ -2609,9 +2625,8 @@ class UserPreferences extends ChangeNotifier {
+@@ -2609,9 +2627,8 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarMode = Preference(
      key: 'mediaBarMode',
@@ -347,7 +358,7 @@ index 654dc28..d3f894e 100644
    );
  
    static final mediaBarContentType = Preference(
-@@ -2621,7 +2636,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2621,7 +2638,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarSourceType = Preference(
      key: 'mediaBarSourceType',
@@ -356,7 +367,7 @@ index 654dc28..d3f894e 100644
    );
  
    static final mediaBarItemCount = Preference(
-@@ -2636,7 +2651,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2636,7 +2653,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final navbarColor = Preference(
      key: 'navbarColor',
@@ -365,7 +376,7 @@ index 654dc28..d3f894e 100644
    );
  
    static final mediaBarOverlayOpacity = Preference(
-@@ -3282,14 +3297,14 @@ class UserPreferences extends ChangeNotifier {
+@@ -3282,14 +3299,14 @@ class UserPreferences extends ChangeNotifier {
    static EnumPreference<LibrarySortBy> librarySortBy(String libraryId) =>
        EnumPreference(
          key: 'library_sort_by_$libraryId',
@@ -796,14 +807,15 @@ index 1f0d8c6..5a53604 100644
                  ),
                ),
 diff --git a/lib/ui/screens/settings/settings_side_panel.dart b/lib/ui/screens/settings/settings_side_panel.dart
-index 01793e9..23c61ea 100644
+index 01793e9..2d0e2c0 100644
 --- a/lib/ui/screens/settings/settings_side_panel.dart
 +++ b/lib/ui/screens/settings/settings_side_panel.dart
-@@ -107,6 +107,11 @@ import '../../../preference/detail_section_layout.dart';
+@@ -107,6 +107,12 @@ import '../../../preference/detail_section_layout.dart';
  import '../detail/detail_buttons.dart';
  import '../playback/osd_buttons.dart';
  import '../syncplay/syncplay_screen.dart';
 +import '../../widgets/cine/cine_widgets.dart';
++import '../../widgets/cine/cine_actions.dart';
 +import 'package:flutter_svg/flutter_svg.dart';
 +import 'package:go_router/go_router.dart';
 +import '../../../auth/repositories/server_repository.dart';
@@ -811,7 +823,7 @@ index 01793e9..23c61ea 100644
  
  part 'panel/settings_panel_infra.dart';
  part 'panel/settings_search_field.dart';
-@@ -139,6 +144,7 @@ part 'panel/automation_queue_screen.dart';
+@@ -139,6 +145,7 @@ part 'panel/automation_queue_screen.dart';
  part 'panel/advanced_options_screen.dart';
  part 'panel/syncplay_settings_screen.dart';
  part 'panel/settings_panel_tiles.dart';
@@ -819,7 +831,7 @@ index 01793e9..23c61ea 100644
  
  bool get _showThemeEditorEntry =>
      PlatformDetection.isWeb && webRuntimeConfig.pluginMode;
-@@ -312,6 +318,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -312,6 +319,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
                onTap: () => unawaited(_exitKidsMode(context)),
              ),
            ]
@@ -837,7 +849,7 @@ index 01793e9..23c61ea 100644
          : <_PanelEntry>[
              if (showAdmin)
                _PanelEntry(
-@@ -376,6 +393,18 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -376,6 +394,18 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
              ),
            ];
  
@@ -856,7 +868,7 @@ index 01793e9..23c61ea 100644
      return Scaffold(
        appBar: AppBar(
          leading: PlatformDetection.isTV
-@@ -389,6 +418,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -389,6 +419,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
        ),
        body: Column(
          children: [
@@ -902,6 +914,40 @@ index 9698869..88da71b 100644
      if (position == NavbarPosition.bottom && !allowBottomNavbar) {
        return NavbarPosition.top;
      }
+diff --git a/lib/ui/widgets/playback/next_up_overlay.dart b/lib/ui/widgets/playback/next_up_overlay.dart
+index 72c9768..bb8b230 100644
+--- a/lib/ui/widgets/playback/next_up_overlay.dart
++++ b/lib/ui/widgets/playback/next_up_overlay.dart
+@@ -13,6 +13,8 @@ import '../../../preference/preference_constants.dart';
+ import '../../../preference/user_preferences.dart';
+ import '../adaptive/adaptive_glass.dart';
+ import '../anime_marker_badge.dart';
++import '../cine/cine_next_up.dart';
++import '../cine/cine_widgets.dart';
+ 
+ class NextUpOverlay extends StatefulWidget {
+   final AggregatedItem nextItem;
+@@ -75,6 +77,20 @@ class _NextUpOverlayState extends State<NextUpOverlay>
+ 
+   @override
+   Widget build(BuildContext context) {
++    // TaquitoFlix: tarjeta estilo Netflix con la misma cuenta atrás y foco.
++    if (kCineUi) {
++      return cineNextUpCard(
++        context,
++        item: widget.nextItem,
++        imageUrl: widget.imageUrl,
++        timeoutMs: widget.timeoutMs,
++        countdown: _countdownController,
++        onPlayNext: widget.onPlayNext,
++        onDismiss: widget.onDismiss,
++        focusNode: widget.focusNode,
++        dismissFocusNode: widget.dismissFocusNode,
++      );
++    }
+     final l10n = AppLocalizations.of(context);
+     final item = widget.nextItem;
+     final tvFocusMode =
 diff --git a/lib/util/app_exit.dart b/lib/util/app_exit.dart
 index 607c9b2..6eca2ca 100644
 --- a/lib/util/app_exit.dart
