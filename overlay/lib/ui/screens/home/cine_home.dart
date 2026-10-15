@@ -40,6 +40,11 @@ class _CineHomeState extends State<_CineHome> {
   CineHeroData? _focusPreview;
   Timer? _previewTimer;
 
+  /// Colecciones del servidor (sagas), con sus títulos en orden de estreno.
+  List<({String id, String name, List<AggregatedItem> items})> _collections =
+      const [];
+  bool _collectionsRequested = false;
+
   /// Aviso de llegada: lo que se descargó mientras la app estaba cerrada.
   AggregatedItem? _arrival;
   int _arrivalCount = 0;
@@ -56,6 +61,70 @@ class _CineHomeState extends State<_CineHome> {
     NavigationLayout.focusContentFromNavbarNotifier.value = _focusContent;
     unawaited(_loadLatest());
     unawaited(_loadDownloaded());
+    unawaited(_loadCollections());
+  }
+
+  /// Hasta 4 colecciones al azar con al menos 3 títulos, cada una con sus
+  /// películas en orden de estreno.
+  Future<void> _loadCollections() async {
+    if (_collectionsRequested) return;
+    _collectionsRequested = true;
+    try {
+      final client = GetIt.instance<MediaServerClient>();
+      final sets = await client.itemsApi.getItems(
+        includeItemTypes: const ['BoxSet'],
+        recursive: true,
+        sortBy: 'Random',
+        limit: 10,
+        fields: '',
+      );
+      final raw = sets['Items'];
+      if (raw is! List || !mounted) return;
+      final serverId = widget.viewModel.rows
+              .expand((r) => r.items)
+              .firstWhereOrNull((i) => i.serverId != 'seerr')
+              ?.serverId ??
+          client.baseUrl;
+      final found = <({String id, String name, List<AggregatedItem> items})>[];
+      for (final s in raw) {
+        if (found.length >= 4) break;
+        if (s is! Map || s['Id'] == null) continue;
+        final children = await client.itemsApi.getItems(
+          parentId: s['Id'].toString(),
+          sortBy: 'PremiereDate,ProductionYear,SortName',
+          sortOrder: 'Ascending',
+          limit: 30,
+          fields: 'Overview,Genres,CommunityRating,OfficialRating,'
+              'ProductionYear,UserData,PrimaryImageAspectRatio',
+          enableImageTypes: 'Primary,Backdrop,Logo,Thumb',
+          imageTypeLimit: 1,
+        );
+        final list = children['Items'];
+        if (list is! List) continue;
+        final items = [
+          for (final m in list)
+            if (m is Map<String, dynamic> &&
+                m['Id'] != null &&
+                (m['ImageTags'] is Map &&
+                    (m['ImageTags'] as Map).containsKey('Primary')))
+              AggregatedItem(
+                id: m['Id'].toString(),
+                serverId: serverId,
+                rawData: m,
+              ),
+        ];
+        if (items.length >= 3) {
+          found.add((
+            id: s['Id'].toString(),
+            name: (s['Name'] ?? '').toString(),
+            items: items,
+          ));
+        }
+      }
+      if (mounted) setState(() => _collections = found);
+    } catch (_) {
+      _collectionsRequested = false;
+    }
   }
 
   /// Lo que se ha descargado con Seerr y ya se puede ver, lo más reciente
@@ -608,6 +677,7 @@ class _CineHomeState extends State<_CineHome> {
     final tileFocused = tv ? _onTileFocused : null;
     // En la tele la fila enfocada baja para dejar sitio a la cabecera viva.
     final focusAlign = tv ? 0.82 : 0.5;
+    final hideStale = widget.prefs.get(cineHideStaleResume);
     final rowWidgets = <Widget>[];
     var inserted = false;
     void insertFeatured() {
@@ -668,6 +738,10 @@ class _CineHomeState extends State<_CineHome> {
       }
       final isProgress = row.rowType == HomeRowType.resume ||
           row.rowType == HomeRowType.nextUp;
+      final rowItems = row.rowType == HomeRowType.resume && hideStale
+          ? row.items.where((it) => !cineIsStaleResume(it)).toList()
+          : row.items;
+      if (rowItems.isEmpty) continue;
       if (!isProgress) insertFeatured();
       final landscape = _isLandscapeRow(row);
       rowWidgets.add(
@@ -679,7 +753,7 @@ class _CineHomeState extends State<_CineHome> {
             mergeContinueWatchingAndNextUp:
                 widget.prefs.effectiveMergeContinueWatchingNextUp,
           ),
-          tiles: [for (final it in row.items) _tile(row, it, landscape)],
+          tiles: [for (final it in rowItems) _tile(row, it, landscape)],
           landscape: landscape,
           playOverlay: row.rowType == HomeRowType.resume ||
               row.rowType == HomeRowType.nextUp,
@@ -690,6 +764,19 @@ class _CineHomeState extends State<_CineHome> {
       );
     }
     insertFeatured();
+
+    // Sagas al final, como en Netflix.
+    for (final c in _collections) {
+      rowWidgets.add(
+        CineRow(
+          key: ValueKey('cine_collection_${c.id}'),
+          title: c.name,
+          tiles: [for (final it in c.items) _tile(null, it, false)],
+          onTileFocused: tileFocused,
+          focusAlignment: focusAlign,
+        ),
+      );
+    }
 
     if (widget.viewModel.isLoading) _sawLoading = true;
     final loading = widget.viewModel.isLoading && rowWidgets.isEmpty;
