@@ -623,7 +623,7 @@ index 0faf067..3976660 100644
          accessToken: credentials.accessToken,
          lastUsed: DateTime.now(),
 diff --git a/lib/ui/screens/auth/startup_screen.dart b/lib/ui/screens/auth/startup_screen.dart
-index 4510b71..16a0a13 100644
+index 4510b71..d91aac7 100644
 --- a/lib/ui/screens/auth/startup_screen.dart
 +++ b/lib/ui/screens/auth/startup_screen.dart
 @@ -7,6 +7,7 @@ import 'package:jellyfin_preference/jellyfin_preference.dart';
@@ -634,15 +634,16 @@ index 4510b71..16a0a13 100644
  import '../../../auth/repositories/session_repository.dart';
  import '../../../auth/store/authentication_preferences.dart';
  import '../../../auth/store/credential_store.dart';
-@@ -19,6 +20,7 @@ import '../../widgets/adaptive/adaptive_dialog.dart';
+@@ -19,6 +20,8 @@ import '../../widgets/adaptive/adaptive_dialog.dart';
  import '../../widgets/overlay_sheet.dart';
  import '../../widgets/pin_entry_dialog.dart';
  import '../../widgets/focus/request_initial_focus.dart';
 +import '../../widgets/cine/cine_widgets.dart';
++import '../../widgets/cine/cine_taquito_loader.dart';
  
  class StartupScreen extends StatefulWidget {
    final bool bootstrapActiveSession;
-@@ -126,7 +128,20 @@ class _StartupScreenState extends State<StartupScreen>
+@@ -126,7 +129,20 @@ class _StartupScreenState extends State<StartupScreen>
        pinEnabledForAutoLoginUser = pinUtil.isPinEnabled;
      }
  
@@ -664,6 +665,35 @@ index 4510b71..16a0a13 100644
          ? false
          : await session.restoreSession();
  
+@@ -208,6 +224,28 @@ class _StartupScreenState extends State<StartupScreen>
+       RequestInitialFocus(child: _buildContent(context));
+ 
+   Widget _buildContent(BuildContext context) {
++    // TaquitoFlix: Taquito animado sobre negro mientras arranca la app.
++    if (kCineUi) {
++      return Scaffold(
++        backgroundColor: Colors.black,
++        body: Center(
++          child: FadeTransition(
++            opacity: _fadeAnimation,
++            child: Column(
++              mainAxisSize: MainAxisSize.min,
++              children: [
++                CineTaquitoLoader(size: _isLargeScreen ? 170 : 130),
++                const SizedBox(height: 28),
++                Image.asset(
++                  'assets/images/logo_and_text.png',
++                  height: _isLargeScreen ? 52 : 40,
++                ),
++              ],
++            ),
++          ),
++        ),
++      );
++    }
+     final gradientColors = [
+       AppColorScheme.background,
+       AppColorScheme.surfaceVariant,
 diff --git a/lib/ui/screens/detail/item_detail_screen.dart b/lib/ui/screens/detail/item_detail_screen.dart
 index ecb75f7..888930e 100644
 --- a/lib/ui/screens/detail/item_detail_screen.dart
@@ -807,15 +837,19 @@ index 1f0d8c6..5a53604 100644
                  ),
                ),
 diff --git a/lib/ui/screens/settings/settings_side_panel.dart b/lib/ui/screens/settings/settings_side_panel.dart
-index 01793e9..2d0e2c0 100644
+index 01793e9..f60bf83 100644
 --- a/lib/ui/screens/settings/settings_side_panel.dart
 +++ b/lib/ui/screens/settings/settings_side_panel.dart
-@@ -107,6 +107,12 @@ import '../../../preference/detail_section_layout.dart';
+@@ -107,6 +107,16 @@ import '../../../preference/detail_section_layout.dart';
  import '../detail/detail_buttons.dart';
  import '../playback/osd_buttons.dart';
  import '../syncplay/syncplay_screen.dart';
 +import '../../widgets/cine/cine_widgets.dart';
 +import '../../widgets/cine/cine_actions.dart';
++import '../../widgets/cine/cine_taquito_loader.dart';
++import '../../screensaver/cine_screensaver.dart';
++import '../../screensaver/screensaver_controller.dart';
++import '../../../data/models/download_quality.dart';
 +import 'package:flutter_svg/flutter_svg.dart';
 +import 'package:go_router/go_router.dart';
 +import '../../../auth/repositories/server_repository.dart';
@@ -823,7 +857,7 @@ index 01793e9..2d0e2c0 100644
  
  part 'panel/settings_panel_infra.dart';
  part 'panel/settings_search_field.dart';
-@@ -139,6 +145,7 @@ part 'panel/automation_queue_screen.dart';
+@@ -139,6 +149,7 @@ part 'panel/automation_queue_screen.dart';
  part 'panel/advanced_options_screen.dart';
  part 'panel/syncplay_settings_screen.dart';
  part 'panel/settings_panel_tiles.dart';
@@ -831,7 +865,7 @@ index 01793e9..2d0e2c0 100644
  
  bool get _showThemeEditorEntry =>
      PlatformDetection.isWeb && webRuntimeConfig.pluginMode;
-@@ -312,6 +319,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -312,6 +323,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
                onTap: () => unawaited(_exitKidsMode(context)),
              ),
            ]
@@ -849,7 +883,7 @@ index 01793e9..2d0e2c0 100644
          : <_PanelEntry>[
              if (showAdmin)
                _PanelEntry(
-@@ -376,6 +394,18 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -376,6 +398,18 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
              ),
            ];
  
@@ -868,7 +902,7 @@ index 01793e9..2d0e2c0 100644
      return Scaffold(
        appBar: AppBar(
          leading: PlatformDetection.isTV
-@@ -389,6 +419,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -389,6 +423,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
        ),
        body: Column(
          children: [
@@ -948,6 +982,27 @@ index 9698869..88da71b 100644
      if (position == NavbarPosition.bottom && !allowBottomNavbar) {
        return NavbarPosition.top;
      }
+diff --git a/lib/ui/widgets/playback/loading_animation_widget.dart b/lib/ui/widgets/playback/loading_animation_widget.dart
+index 7f493ad..f375e1a 100644
+--- a/lib/ui/widgets/playback/loading_animation_widget.dart
++++ b/lib/ui/widgets/playback/loading_animation_widget.dart
+@@ -1,3 +1,5 @@
++import '../cine/cine_taquito_loader.dart';
++import '../cine/cine_widgets.dart' show kCineUi;
+ import 'dart:math' as math;
+ 
+ import 'package:flutter/material.dart';
+@@ -209,6 +211,10 @@ class LoadingAnimationWidget extends StatelessWidget {
+ 
+   @override
+   Widget build(BuildContext context) {
++    // TaquitoFlix: en las esperas aparece Taquito animado.
++    if (kCineUi && image != LoadingAnimationImage.none) {
++      return CineTaquitoLoader(size: size);
++    }
+     return switch (image) {
+       LoadingAnimationImage.none => const SizedBox.shrink(),
+       LoadingAnimationImage.moonfinLogo => MoonfinLogoAnimation(
 diff --git a/lib/ui/widgets/playback/next_up_overlay.dart b/lib/ui/widgets/playback/next_up_overlay.dart
 index 72c9768..bb8b230 100644
 --- a/lib/ui/widgets/playback/next_up_overlay.dart
