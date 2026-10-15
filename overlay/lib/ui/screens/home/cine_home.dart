@@ -29,6 +29,8 @@ class _CineHomeState extends State<_CineHome> {
   bool _initialFocusDone = false;
   List<AggregatedItem> _latest = const [];
   bool _latestRequested = false;
+  List<AggregatedItem> _downloaded = const [];
+  bool _downloadedRequested = false;
 
   @override
   void initState() {
@@ -40,6 +42,73 @@ class _CineHomeState extends State<_CineHome> {
         NavigationLayout.focusContentFromNavbarNotifier.value;
     NavigationLayout.focusContentFromNavbarNotifier.value = _focusContent;
     unawaited(_loadLatest());
+    unawaited(_loadDownloaded());
+  }
+
+  /// Lo que se ha descargado con Seerr y ya se puede ver, lo más reciente
+  /// primero. Se abre directamente la ficha del servidor.
+  Future<void> _loadDownloaded() async {
+    if (_downloadedRequested) return;
+    if (!GetIt.instance<PluginSyncService>().seerrAvailable) return;
+    _downloadedRequested = true;
+    try {
+      final repo = await GetIt.instance.getAsync<SeerrRepository>();
+      await repo.ensureInitialized();
+      final page = await repo.getRequests(
+        filter: 'available',
+        sort: 'modified',
+        limit: 30,
+      );
+      // Seerr da el identificador de TMDB; se cruza con lo último añadido al
+      // servidor, que lleva los mismos identificadores.
+      final tmdbIds = <String>[];
+      for (final r in page.results) {
+        final id = r.media?.tmdbId?.toString();
+        if (id != null && !tmdbIds.contains(id)) tmdbIds.add(id);
+      }
+      if (tmdbIds.isEmpty || !mounted) return;
+      final client = GetIt.instance<MediaServerClient>();
+      final response = await client.itemsApi.getItems(
+        includeItemTypes: const ['Movie', 'Series'],
+        recursive: true,
+        sortBy: 'DateCreated',
+        sortOrder: 'Descending',
+        limit: 200,
+        fields: 'ProviderIds,PrimaryImageAspectRatio,ProductionYear,UserData,'
+            'DateCreated',
+        enableImageTypes: 'Primary,Backdrop,Thumb',
+        imageTypeLimit: 1,
+      );
+      final raw = response['Items'];
+      if (raw is! List || !mounted) return;
+      final serverId = widget.viewModel.rows
+              .expand((r) => r.items)
+              .firstWhereOrNull((i) => i.serverId != 'seerr')
+              ?.serverId ??
+          client.baseUrl;
+      final byTmdb = <String, AggregatedItem>{};
+      for (final m in raw) {
+        if (m is! Map<String, dynamic> || m['Id'] == null) continue;
+        final providers = m['ProviderIds'];
+        final tmdb = providers is Map ? providers['Tmdb']?.toString() : null;
+        if (tmdb == null || tmdb.isEmpty) continue;
+        byTmdb.putIfAbsent(
+          tmdb,
+          () => AggregatedItem(
+            id: m['Id'].toString(),
+            serverId: serverId,
+            rawData: m,
+          ),
+        );
+      }
+      final items = [
+        for (final id in tmdbIds)
+          if (byTmdb[id] != null) byTmdb[id]!,
+      ];
+      if (mounted) setState(() => _downloaded = items);
+    } catch (_) {
+      _downloadedRequested = false;
+    }
   }
 
   /// Lo último añadido en todas las bibliotecas (los episodios nuevos se
@@ -113,6 +182,7 @@ class _CineHomeState extends State<_CineHome> {
   void _onDataChanged() {
     if (!mounted) return;
     if (_latest.isEmpty) unawaited(_loadLatest());
+    if (_downloaded.isEmpty) unawaited(_loadDownloaded());
     setState(() {});
     if (!_initialFocusDone && PlatformDetection.useLeanbackUi) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -355,6 +425,19 @@ class _CineHomeState extends State<_CineHome> {
     void insertFeatured() {
       if (inserted) return;
       inserted = true;
+      if (_downloaded.isNotEmpty) {
+        rowWidgets.add(
+          CineRow(
+            key: const ValueKey('cine_downloaded'),
+            title: cineText(
+              context,
+              'Recién descargado para ti',
+              'Just downloaded for you',
+            ),
+            tiles: [for (final it in _downloaded) _latestTile(it)],
+          ),
+        );
+      }
       if (_latest.isNotEmpty) {
         rowWidgets.add(
           CineRow(
@@ -484,6 +567,30 @@ class _CineHomeState extends State<_CineHome> {
                     padding: EdgeInsets.all(48),
                     child: Center(
                       child: CircularProgressIndicator(color: cineRed),
+                    ),
+                  ),
+                ),
+              if (!loading && rowWidgets.isEmpty && hero == null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: mobile ? 80 : 0),
+                    child: CineEmptyState(
+                      title: cineText(
+                        context,
+                        'Taquito no encuentra tu biblioteca',
+                        'Taquito can\'t find your library',
+                      ),
+                      message: cineText(
+                        context,
+                        'Puede que el servidor no responda o que aún no haya nada. '
+                            'Comprueba la conexión e inténtalo de nuevo.',
+                        'The server may be unreachable or empty. '
+                            'Check the connection and try again.',
+                      ),
+                      actionLabel: cineText(context, 'Reintentar', 'Try again'),
+                      onAction: () => unawaited(
+                        widget.viewModel.load(forceRefresh: true),
+                      ),
                     ),
                   ),
                 ),
