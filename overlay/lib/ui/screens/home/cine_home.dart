@@ -32,6 +32,10 @@ class _CineHomeState extends State<_CineHome> {
   List<AggregatedItem> _downloaded = const [];
   bool _downloadedRequested = false;
 
+  /// La portada solo dice "no encuentro tu biblioteca" después de haber
+  /// intentado cargarla, no en el instante antes de empezar.
+  bool _sawLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -495,6 +499,7 @@ class _CineHomeState extends State<_CineHome> {
     }
     insertFeatured();
 
+    if (widget.viewModel.isLoading) _sawLoading = true;
     final loading = widget.viewModel.isLoading && rowWidgets.isEmpty;
     final upEdge = cineFocusNavbar;
     final leftEdge = cineNavbarIsLeft ? cineFocusNavbar : null;
@@ -570,7 +575,7 @@ class _CineHomeState extends State<_CineHome> {
                     ),
                   ),
                 ),
-              if (!loading && rowWidgets.isEmpty && hero == null)
+              if (_sawLoading && !loading && rowWidgets.isEmpty && hero == null)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.only(top: mobile ? 80 : 0),
