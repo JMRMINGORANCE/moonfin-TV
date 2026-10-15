@@ -22,7 +22,10 @@ GitHub Actions descarga la versión de Moonfin indicada en `UPSTREAM_REF`, aplic
 - **Buscador**: busca a la vez en tu biblioteca y en Seerr (lo que no tienes sale con el botón Descargar), con búsqueda por voz en Android.
 - **Ajustes**: rediseñados por completo. Tu perfil arriba (cambiar de perfil, cerrar sesión) y secciones claras con el valor actual a la vista: idioma y subtítulos, reproducción (calidad, intros, créditos, siguiente episodio), tu TaquitoFlix (portada, tráileres, descargas, Seerr, PIN), servidor y ayuda. Sin asistente de bienvenida.
 - **Taquito te avisa**: búsquedas sin resultados, servidor o Seerr sin conexión… con el perro y un botón de reintentar en lugar de mensajes técnicos.
-- **Reproducción**: si el servidor rechaza el vídeo directo, la app lo pide transcodificado antes de mostrar un error. Botón de saltar intro y créditos.
+- **Reproducción estilo Netflix**: saltos de 10 s (configurables), barra roja y solo los accesos útiles (Episodios, Audio, Subtítulos, Velocidad, Calidad y Enviar). Si el servidor rechaza el vídeo directo, la app lo pide transcodificado antes de mostrar un error. Botón de saltar intro y créditos.
+- **Cabecera viva en la tele**: al moverte por las filas, arriba aparece la imagen, los datos y la sinopsis del título enfocado.
+- **Menú rápido**: mantener pulsada una carátula (o mantener OK en el mando) en *Seguir viendo* ofrece Reproducir, Ver ficha, Quitar de Seguir viendo, Marcar como visto y Más opciones.
+- **Aviso de llegada**: al abrir la app, «Ya puedes ver…» con lo que se descargó desde Seerr mientras estaba cerrada.
 - **Actualizaciones**: cada compilación tiene un número que crece (`v2.7.0.N`) y la app avisa sola de que hay versión nueva.
 - **Ficha de detalle** estilo Netflix también para lo que aún no tienes (con Descargar) y navegación con mando al estilo de las plataformas de streaming. Android TV muestra *Seguir viendo* en la pantalla de inicio de la tele.
 - **Android**: id `es.josemingorance.taquitoflix`, nombre *TaquitoFlix*.

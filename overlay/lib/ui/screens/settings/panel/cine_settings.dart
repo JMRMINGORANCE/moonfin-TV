@@ -450,6 +450,21 @@ class _CineSettingsHome extends StatelessWidget {
               ),
             ),
             _CineSettingTile(
+              icon: Icons.replay_10_rounded,
+              title: _t(context, 'Saltos al retroceder y avanzar', 'Skip back and forward'),
+              value: '${prefs.get(UserPreferences.skipForwardLength) ~/ 1000} s',
+              onTap: () => _cinePick<int>(
+                context,
+                values: const [5000, 10000, 15000, 30000],
+                labels: const ['5 s', '10 s', '15 s', '30 s'],
+                current: prefs.get(UserPreferences.skipForwardLength),
+                onPick: (v) async {
+                  await prefs.set(UserPreferences.skipBackLength, v);
+                  await prefs.set(UserPreferences.skipForwardLength, v);
+                },
+              ),
+            ),
+            _CineSettingTile(
               icon: Icons.skip_next,
               title: _t(context, 'Siguiente episodio automático', 'Autoplay next episode'),
               switchValue: prefs.get(UserPreferences.autoplayNextEpisode),
