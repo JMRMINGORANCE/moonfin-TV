@@ -36,6 +36,15 @@ class _CineHomeState extends State<_CineHome> {
   /// intentado cargarla, no en el instante antes de empezar.
   bool _sawLoading = false;
 
+  /// Cabecera viva (TV): el título que tiene el foco en las filas.
+  CineHeroData? _focusPreview;
+  Timer? _previewTimer;
+
+  /// Aviso de llegada: lo que se descargó mientras la app estaba cerrada.
+  AggregatedItem? _arrival;
+  int _arrivalCount = 0;
+  Timer? _arrivalTimer;
+
   @override
   void initState() {
     super.initState();
@@ -110,9 +119,174 @@ class _CineHomeState extends State<_CineHome> {
           if (byTmdb[id] != null) byTmdb[id]!,
       ];
       if (mounted) setState(() => _downloaded = items);
+      unawaited(_checkArrivals(items));
     } catch (_) {
       _downloadedRequested = false;
     }
+  }
+
+  Future<void> _checkArrivals(List<AggregatedItem> items) async {
+    final fresh = await cineNewArrivals(items);
+    if (!mounted || fresh.isEmpty) return;
+    setState(() {
+      _arrival = fresh.first;
+      _arrivalCount = fresh.length;
+    });
+    _arrivalTimer?.cancel();
+    _arrivalTimer = Timer(const Duration(seconds: 12), () {
+      if (mounted) setState(() => _arrival = null);
+    });
+  }
+
+  // -- cabecera viva (TV) ---------------------------------------------------
+
+  void _onTileFocused(CineTile tile) {
+    final preview = tile.preview;
+    if (preview == null) return;
+    _previewTimer?.cancel();
+    // Pequeña espera para no cambiar la imagen en cada paso del mando.
+    _previewTimer = Timer(const Duration(milliseconds: 220), () {
+      if (mounted) setState(() => _focusPreview = preview);
+    });
+  }
+
+  CineHeroData? _previewFor(AggregatedItem item) {
+    if (item.serverId == 'seerr') return null;
+    final api = widget.viewModel.imageApiForServer(item.serverId);
+    String? backdrop;
+    if (item.backdropImageTags.isNotEmpty) {
+      backdrop = api.getBackdropImageUrl(
+        item.id,
+        maxWidth: 1600,
+        tag: item.backdropImageTags.first,
+      );
+    } else if (item.parentBackdropItemId != null &&
+        item.parentBackdropImageTags.isNotEmpty) {
+      backdrop = api.getBackdropImageUrl(
+        item.parentBackdropItemId!,
+        maxWidth: 1600,
+        tag: item.parentBackdropImageTags.first,
+      );
+    }
+    String? logo;
+    if (item.logoImageTag != null) {
+      logo = api.getLogoImageUrl(item.id, maxWidth: 700, tag: item.logoImageTag);
+    } else if (item.seriesLogoImageTag != null && item.seriesId != null) {
+      logo = api.getLogoImageUrl(
+        item.seriesId!,
+        maxWidth: 700,
+        tag: item.seriesLogoImageTag,
+      );
+    }
+    final rating = item.communityRating;
+    final meta = [
+      if (rating != null && rating > 0) '★ ${rating.toStringAsFixed(1)}',
+      if (item.productionYear != null) '${item.productionYear}',
+      if (item.officialRating != null && item.officialRating!.isNotEmpty)
+        item.officialRating!,
+      ...item.genres.take(2),
+    ].join('  •  ');
+    final isEpisode = item.type == 'Episode';
+    return CineHeroData(
+      title: isEpisode ? (item.seriesName ?? item.name) : item.name,
+      overview: item.overview,
+      backdropUrl: backdrop,
+      logoUrl: logo,
+      metaLine: meta,
+      eyebrow: isEpisode &&
+              item.parentIndexNumber != null &&
+              item.indexNumber != null
+          ? 'T${item.parentIndexNumber}:E${item.indexNumber}  ${item.name}'
+          : null,
+    );
+  }
+
+  // -- menú rápido de "Seguir viendo" ---------------------------------------
+
+  void _quickMenu(HomeRow row, AggregatedItem item) {
+    final isResume = row.rowType == HomeRowType.resume;
+    final messenger = ScaffoldMessenger.of(context);
+    Future<void> run(Future<void> Function() action, String done) async {
+      try {
+        await action();
+        await widget.viewModel.refreshResumeAndNextUp();
+        if (mounted) {
+          messenger.showSnackBar(SnackBar(content: Text(done)));
+        }
+      } catch (_) {
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                cineText(context, 'No se ha podido hacer.', 'That didn\'t work.'),
+              ),
+            ),
+          );
+        }
+      }
+    }
+
+    final title = item.type == 'Episode'
+        ? (item.seriesName ?? item.name)
+        : item.name;
+    final subtitle = item.type == 'Episode' &&
+            item.parentIndexNumber != null &&
+            item.indexNumber != null
+        ? 'T${item.parentIndexNumber}:E${item.indexNumber}  ${item.name}'
+        : null;
+    unawaited(
+      showCineQuickMenu(
+        context,
+        title: title,
+        subtitle: subtitle,
+        actions: [
+          CineMenuAction(
+            icon: Icons.play_arrow_rounded,
+            label: cineText(context, 'Reproducir', 'Play'),
+            onTap: () => _play(item.id, item.serverId),
+          ),
+          CineMenuAction(
+            icon: Icons.info_outline_rounded,
+            label: cineText(context, 'Ver ficha', 'Details'),
+            onTap: () => _openItem(context, row, item),
+          ),
+          if (isResume)
+            CineMenuAction(
+              icon: Icons.remove_circle_outline_rounded,
+              label: cineText(
+                context,
+                'Quitar de Seguir viendo',
+                'Remove from Continue Watching',
+              ),
+              onTap: () => unawaited(
+                run(
+                  () => cineSetPlayed(item.id, played: false),
+                  cineText(
+                    context,
+                    'Quitado de Seguir viendo.',
+                    'Removed from Continue Watching.',
+                  ),
+                ),
+              ),
+            ),
+          CineMenuAction(
+            icon: Icons.check_circle_outline_rounded,
+            label: cineText(context, 'Marcar como visto', 'Mark as watched'),
+            onTap: () => unawaited(
+              run(
+                () => cineSetPlayed(item.id, played: true),
+                cineText(context, 'Marcado como visto.', 'Marked as watched.'),
+              ),
+            ),
+          ),
+          CineMenuAction(
+            icon: Icons.more_horiz_rounded,
+            label: cineText(context, 'Más opciones', 'More options'),
+            onTap: () => showContextMenu(context, item),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Lo último añadido en todas las bibliotecas (los episodios nuevos se
@@ -172,6 +346,8 @@ class _CineHomeState extends State<_CineHome> {
       NavigationLayout.focusContentFromNavbarNotifier.value =
           _previousFocusContent;
     }
+    _previewTimer?.cancel();
+    _arrivalTimer?.cancel();
     _scroll.removeListener(_onScroll);
     _scroll.dispose();
     _heroPlayFocus.dispose();
@@ -385,6 +561,7 @@ class _CineHomeState extends State<_CineHome> {
           : cineText(context, 'NUEVO', 'NEW'),
       onTap: base.onTap,
       onLongPress: base.onLongPress,
+      preview: base.preview,
     );
   }
 
@@ -410,7 +587,10 @@ class _CineHomeState extends State<_CineHome> {
       onTap: () => _openItem(context, row, item),
       onLongPress: item.serverId == 'seerr'
           ? null
-          : () => showContextMenu(context, item),
+          : isProgressRow && row != null
+              ? () => _quickMenu(row, item)
+              : () => showContextMenu(context, item),
+      preview: cineIsTv ? _previewFor(item) : null,
     );
   }
 
@@ -424,6 +604,10 @@ class _CineHomeState extends State<_CineHome> {
     final mobile = PlatformDetection.useMobileUi;
     final top10 = _top10(allRows);
 
+    final tv = cineIsTv;
+    final tileFocused = tv ? _onTileFocused : null;
+    // En la tele la fila enfocada baja para dejar sitio a la cabecera viva.
+    final focusAlign = tv ? 0.82 : 0.5;
     final rowWidgets = <Widget>[];
     var inserted = false;
     void insertFeatured() {
@@ -439,6 +623,8 @@ class _CineHomeState extends State<_CineHome> {
               'Just downloaded for you',
             ),
             tiles: [for (final it in _downloaded) _latestTile(it)],
+            onTileFocused: tileFocused,
+            focusAlignment: focusAlign,
           ),
         );
       }
@@ -448,6 +634,8 @@ class _CineHomeState extends State<_CineHome> {
             key: const ValueKey('cine_latest'),
             title: cineText(context, 'Lo último añadido', 'Recently added'),
             tiles: [for (final it in _latest) _latestTile(it)],
+            onTileFocused: tileFocused,
+            focusAlignment: focusAlign,
           ),
         );
       }
@@ -461,6 +649,8 @@ class _CineHomeState extends State<_CineHome> {
               'Top 10 in your library',
             ),
             tiles: [for (final it in top10) _tile(null, it, false)],
+            onTileFocused: tileFocused,
+            focusAlignment: focusAlign,
           ),
         );
       }
@@ -494,6 +684,8 @@ class _CineHomeState extends State<_CineHome> {
           playOverlay: row.rowType == HomeRowType.resume ||
               row.rowType == HomeRowType.nextUp,
           onNearEnd: () => widget.viewModel.loadMoreForRow(i),
+          onTileFocused: tileFocused,
+          focusAlignment: focusAlign,
         ),
       );
     }
@@ -603,6 +795,49 @@ class _CineHomeState extends State<_CineHome> {
               SliverToBoxAdapter(child: SizedBox(height: mobile ? 120 : 80)),
             ],
           ),
+          if (tv)
+            ValueListenableBuilder<double>(
+              valueListenable: _scrollOffset,
+              builder: (context, offset, _) {
+                final h = MediaQuery.sizeOf(context).height;
+                final show = _focusPreview != null && offset > h * 0.45;
+                return Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: h * 0.46,
+                  child: IgnorePointer(
+                    ignoring: !show,
+                    child: AnimatedOpacity(
+                      opacity: show ? 1 : 0,
+                      duration: const Duration(milliseconds: 220),
+                      child: _focusPreview == null
+                          ? const SizedBox.shrink()
+                          : _CinePreviewPanel(data: _focusPreview!),
+                    ),
+                  ),
+                );
+              },
+            ),
+          if (_arrival != null)
+            Positioned(
+              left: mobile ? 12 : null,
+              right: mobile ? 12 : 40,
+              bottom: mobile ? 96 : 40,
+              child: _CineArrivalCard(
+                item: _arrival!,
+                count: _arrivalCount,
+                imageUrl: _imageFor(_arrival!, false, 180),
+                onPlay: mobile
+                    ? () {
+                        final item = _arrival!;
+                        setState(() => _arrival = null);
+                        _play(item.id, item.serverId);
+                      }
+                    : null,
+                onClose: () => setState(() => _arrival = null),
+              ),
+            ),
           if (mobile)
             Positioned(
               top: 0,
@@ -664,5 +899,225 @@ class _CineHomeState extends State<_CineHome> {
           onTap: () => context.push(Destinations.seerrDiscover),
         ),
     ];
+  }
+}
+
+/// Cabecera viva de la tele: aparece al bajar a las filas y enseña el título
+/// que tiene el foco, con su imagen, datos y sinopsis.
+class _CinePreviewPanel extends StatelessWidget {
+  final CineHeroData data;
+
+  const _CinePreviewPanel({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final pad = cineSidePadding(context);
+    final url = data.backdropUrl;
+    return ColoredBox(
+      color: cineBg,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (url != null)
+            Positioned(
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: size.width * 0.66,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: BoundedNetworkImage(
+                  key: ValueKey(url),
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                  minWidth: 960,
+                  maxWidth: 1600,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                stops: [0.3, 0.6, 1.0],
+                colors: [cineBg, Color(0x99000000), Color(0x00000000)],
+              ),
+            ),
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.65, 1.0],
+                colors: [Color(0x00000000), cineBg],
+              ),
+            ),
+          ),
+          Positioned(
+            left: pad,
+            top: MediaQuery.paddingOf(context).top + 36,
+            width: size.width * 0.42,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                cineTitleOrLogo(data, size.width * 0.3, 40, TextAlign.start),
+                if (data.eyebrow != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    data.eyebrow!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+                if (data.metaLine.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    data.metaLine,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 17),
+                  ),
+                ],
+                if ((data.overview ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    data.overview!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFDDDDDD),
+                      fontSize: 17,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Aviso de llegada: "Ya puedes ver…" cuando algo pedido en Seerr se descargó
+/// mientras la app estaba cerrada.
+class _CineArrivalCard extends StatelessWidget {
+  final AggregatedItem item;
+  final int count;
+  final String? imageUrl;
+  final VoidCallback? onPlay;
+  final VoidCallback onClose;
+
+  const _CineArrivalCard({
+    required this.item,
+    required this.count,
+    required this.imageUrl,
+    required this.onPlay,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tv = cineIsTv;
+    final others = count - 1;
+    final title = cineText(
+      context,
+      'Ya puedes ver «${item.name}»',
+      'You can now watch “${item.name}”',
+    );
+    final detail = others > 0
+        ? cineText(
+            context,
+            'Y $others más en «Recién descargado para ti».',
+            'And $others more in “Just downloaded for you”.',
+          )
+        : cineText(
+            context,
+            'Está en «Recién descargado para ti».',
+            'It\'s in “Just downloaded for you”.',
+          );
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        constraints: BoxConstraints(maxWidth: tv ? 520 : 600),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xF21C1C1C),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: cineRed, width: 1.5),
+          boxShadow: const [BoxShadow(color: Color(0x99000000), blurRadius: 20)],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                width: tv ? 64 : 52,
+                height: tv ? 96 : 78,
+                child: imageUrl == null
+                    ? const ColoredBox(color: cineCardBg)
+                    : BoundedNetworkImage(
+                        imageUrl: imageUrl!,
+                        fit: BoxFit.cover,
+                        minWidth: 80,
+                        maxWidth: 200,
+                        errorBuilder: (_, _, _) =>
+                            const ColoredBox(color: cineCardBg),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: GestureDetector(
+                onTap: onPlay,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: tv ? 20 : 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      onPlay != null
+                          ? cineText(context, 'Toca para verla ya. ', 'Tap to watch now. ') + detail
+                          : detail,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: cineMuted, fontSize: tv ? 16 : 13),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (!tv)
+              IconButton(
+                onPressed: onClose,
+                icon: const Icon(Icons.close_rounded, color: cineMuted),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
