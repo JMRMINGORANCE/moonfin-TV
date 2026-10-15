@@ -196,6 +196,14 @@ def make_images():
             (SRC / rel).write_text(HEAD_SVG, encoding="utf-8")
             log(f"sustituido {rel}")
 
+    # Capas de Taquito para la animación de carga (orejas, cara, párpados).
+    sys.path.insert(0, str(HERE))
+    import make_layers
+    for name, text in make_layers.layers().items():
+        (SRC / "assets/icons" / f"taquito_layer_{name}.svg").write_text(
+            text, encoding="utf-8")
+        log(f"generado assets/icons/taquito_layer_{name}.svg")
+
     # Logotipo con texto (pantallas de inicio de sesión, ajustes, salvapantallas).
     w, h = viewbox(WORDMARK_SVG)
     save(render(WORDMARK_SVG, 1179, round(1179 * h / w)),
@@ -227,7 +235,6 @@ def make_images():
          f"{res}/drawable-nodpi/moonfin_tv_banner.png")
 
     # Fondos del protector de pantalla, dibujados con Taquito.
-    sys.path.insert(0, str(HERE))
     import make_wallpapers
     for name, draw in make_wallpapers.WALLPAPERS:
         img = render(draw(), 1920, 1080)
