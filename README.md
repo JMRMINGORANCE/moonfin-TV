@@ -6,7 +6,7 @@ Basado en [Moonfin](https://github.com/Moonfin-Client/Moonfin-Core) (GPL-2.0). E
 
 - `patches/cine-ui.patch`: cambios sobre archivos de Moonfin (tema, navegación, rutas, nombre, servidor por defecto, idioma).
 - `overlay/`: pantallas nuevas completas (portada, ficha, bibliotecas, Seerr y componentes comunes).
-- `branding/`: dibujo de Taquito (`taquito_head.svg`), logotipo (`taquitoflix_wordmark.svg`) y `rebrand.py`, que en cada compilación cambia los textos a TaquitoFlix y genera todos los iconos, banners y pantallas de carga.
+- `branding/`: dibujo de Taquito (`taquito_head.svg`), logotipo (`taquitoflix_wordmark.svg`), generador de fondos del protector de pantalla (`make_wallpapers.py`) y `rebrand.py`, que en cada compilación cambia los textos a TaquitoFlix y genera todos los iconos, banners y pantallas de carga.
 - `tizen/`: empaquetado para Samsung.
 
 GitHub Actions descarga la versión de Moonfin indicada en `UPSTREAM_REF`, aplica el parche, copia `overlay/`, ejecuta `branding/rebrand.py` y compila.
@@ -26,6 +26,7 @@ GitHub Actions descarga la versión de Moonfin indicada en `UPSTREAM_REF`, aplic
 - **Siguiente episodio estilo Netflix**: al empezar los créditos (si el servidor los tiene marcados) aparece una tarjeta con la imagen del siguiente episodio, «Ver créditos» y «Siguiente episodio», que se va llenando durante la cuenta atrás.
 - **Seguir viendo limpio**: oculta lo que llevas más de 3 meses sin tocar (se puede desactivar en Ajustes).
 - **Sagas en la portada**: filas automáticas con las colecciones del servidor (Harry Potter, Marvel…), en orden de estreno.
+- **Protector de pantalla con Taquito** (tele): tras unos minutos sin usar el mando pasan tres fondos dibujados de Taquito (noche de cine, durmiendo bajo la luna y estilo pop) con zoom lento, la hora y el logo. Se ajusta en *Ajustes → Tu TaquitoFlix*. Los fondos salen de `branding/make_wallpapers.py`.
 - **Cabecera viva en la tele**: al moverte por las filas, arriba aparece la imagen, los datos y la sinopsis del título enfocado.
 - **Menú rápido**: mantener pulsada una carátula (o mantener OK en el mando) en *Seguir viendo* ofrece Reproducir, Ver ficha, Quitar de Seguir viendo, Marcar como visto y Más opciones.
 - **Aviso de llegada**: al abrir la app, «Ya puedes ver…» con lo que se descargó desde Seerr mientras estaba cerrada.

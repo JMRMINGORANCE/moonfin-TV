@@ -529,6 +529,38 @@ class _CineSettingsHome extends StatelessWidget {
                 !prefs.get(UserPreferences.mediaBarTrailerPreview),
               ),
             ),
+            if (PlatformDetection.isTV) ...[
+              _CineSettingTile(
+                icon: Icons.pets_rounded,
+                title: _t(context, 'Protector de pantalla', 'Screensaver'),
+                value: _t(
+                  context,
+                  'Taquito aparece tras ${prefs.get(UserPreferences.screensaverTimeout).minutes} min sin usar el mando',
+                  'Taquito shows up after ${prefs.get(UserPreferences.screensaverTimeout).minutes} min idle',
+                ),
+                switchValue: prefs.get(UserPreferences.screensaverEnabled),
+                onTap: () => prefs.set(
+                  UserPreferences.screensaverEnabled,
+                  !prefs.get(UserPreferences.screensaverEnabled),
+                ),
+              ),
+              if (prefs.get(UserPreferences.screensaverEnabled))
+                _CineSettingTile(
+                  icon: Icons.timer_outlined,
+                  title: _t(context, 'Aparece a los…', 'Starts after…'),
+                  value: '${prefs.get(UserPreferences.screensaverTimeout).minutes} min',
+                  onTap: () => _cinePick<ScreensaverTimeout>(
+                    context,
+                    values: ScreensaverTimeout.values,
+                    labels: [
+                      for (final v in ScreensaverTimeout.values) '${v.minutes} min',
+                    ],
+                    current: prefs.get(UserPreferences.screensaverTimeout),
+                    onPick: (v) =>
+                        prefs.set(UserPreferences.screensaverTimeout, v),
+                  ),
+                ),
+            ],
             if (!PlatformDetection.isWeb)
               _CineSettingTile(
                 icon: Icons.download_for_offline,
