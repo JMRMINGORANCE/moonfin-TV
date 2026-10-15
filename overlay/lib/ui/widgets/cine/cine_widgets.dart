@@ -137,11 +137,46 @@ class CineFocusable extends StatefulWidget {
 class _CineFocusableState extends State<CineFocusable> {
   bool _focused = false;
 
+  // Con menú (onLongPress), OK se resuelve al soltar: pulsación corta abre,
+  // mantener pulsado muestra el menú (como en Netflix con el mando).
+  bool _pressing = false;
+  bool _longFired = false;
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    final key = event.logicalKey;
+    final hasMenu = widget.onLongPress != null;
+    if (hasMenu && cineIsActivateKey(key)) {
+      if (event is KeyDownEvent) {
+        _pressing = true;
+        _longFired = false;
+        return KeyEventResult.handled;
+      }
+      if (event is KeyRepeatEvent) {
+        if (_pressing && !_longFired) {
+          _longFired = true;
+          widget.onLongPress!();
+        }
+        return KeyEventResult.handled;
+      }
+      if (event is KeyUpEvent) {
+        // Solo si la pulsación empezó aquí (no una que venía de otra pantalla).
+        if (!_pressing) return KeyEventResult.ignored;
+        _pressing = false;
+        if (!_longFired) widget.onActivate?.call();
+        return KeyEventResult.handled;
+      }
+    }
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
-    final key = event.logicalKey;
+    if (hasMenu &&
+        event is KeyDownEvent &&
+        (key == LogicalKeyboardKey.contextMenu ||
+            key == LogicalKeyboardKey.info ||
+            key == LogicalKeyboardKey.gameButtonY)) {
+      widget.onLongPress!();
+      return KeyEventResult.handled;
+    }
     if (event is KeyDownEvent && cineIsActivateKey(key)) {
       if (widget.onActivate == null) return KeyEventResult.ignored;
       widget.onActivate!();
@@ -182,6 +217,7 @@ class _CineFocusableState extends State<CineFocusable> {
       autofocus: widget.autofocus,
       onKeyEvent: _onKey,
       onFocusChange: (f) {
+        if (!f) _pressing = false;
         if (mounted) setState(() => _focused = f);
         widget.onFocusChange?.call(f);
         if (f) {
@@ -374,6 +410,9 @@ class CineTile {
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
+  /// Lo que la cabecera viva enseña cuando esta tarjeta tiene el foco (TV).
+  final CineHeroData? preview;
+
   const CineTile({
     required this.id,
     required this.title,
@@ -384,6 +423,7 @@ class CineTile {
     this.badge,
     this.badgeColor = cineRed,
     this.onLongPress,
+    this.preview,
   });
 }
 
@@ -396,6 +436,8 @@ class CineCard extends StatelessWidget {
   final FocusNode? focusNode;
   final VoidCallback? onUpEdge;
   final VoidCallback? onLeftEdge;
+  final ValueChanged<CineTile>? onFocused;
+  final double scrollAlignment;
 
   const CineCard({
     super.key,
@@ -407,6 +449,8 @@ class CineCard extends StatelessWidget {
     this.focusNode,
     this.onUpEdge,
     this.onLeftEdge,
+    this.onFocused,
+    this.scrollAlignment = 0.5,
   });
 
   @override
@@ -516,6 +560,12 @@ class CineCard extends StatelessWidget {
       onLongPress: tile.onLongPress,
       onUpEdge: onUpEdge,
       onLeftEdge: onLeftEdge,
+      scrollAlignment: scrollAlignment,
+      onFocusChange: onFocused == null
+          ? null
+          : (f) {
+              if (f) onFocused!(tile);
+            },
       builder: (context, focused) => SizedBox(
         width: width,
         child: Column(
@@ -597,6 +647,10 @@ class CineRow extends StatelessWidget {
   final bool landscape;
   final bool playOverlay;
   final VoidCallback? onNearEnd;
+  final ValueChanged<CineTile>? onTileFocused;
+
+  /// Dónde queda la fila al recibir el foco (0 arriba, 1 abajo).
+  final double focusAlignment;
 
   const CineRow({
     super.key,
@@ -605,6 +659,8 @@ class CineRow extends StatelessWidget {
     this.landscape = false,
     this.playOverlay = false,
     this.onNearEnd,
+    this.onTileFocused,
+    this.focusAlignment = 0.5,
   });
 
   @override
@@ -643,6 +699,8 @@ class CineRow extends StatelessWidget {
                   caption: landscape,
                   playOverlay: playOverlay,
                   onLeftEdge: index == 0 ? leftEdge : null,
+                  onFocused: onTileFocused,
+                  scrollAlignment: focusAlignment,
                 ),
               );
             },
@@ -657,8 +715,16 @@ class CineRow extends StatelessWidget {
 class CineTop10Row extends StatelessWidget {
   final String title;
   final List<CineTile> tiles;
+  final ValueChanged<CineTile>? onTileFocused;
+  final double focusAlignment;
 
-  const CineTop10Row({super.key, required this.title, required this.tiles});
+  const CineTop10Row({
+    super.key,
+    required this.title,
+    required this.tiles,
+    this.onTileFocused,
+    this.focusAlignment = 0.5,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -712,6 +778,8 @@ class CineTop10Row extends StatelessWidget {
                       width: posterW,
                       imageHeight: posterH,
                       onLeftEdge: index == 0 ? leftEdge : null,
+                      onFocused: onTileFocused,
+                      scrollAlignment: focusAlignment,
                     ),
                   ],
                 ),
@@ -1277,6 +1345,130 @@ Widget cinePageTitle(BuildContext context, String title) {
       fontSize: tv ? 34 : 24,
       fontWeight: FontWeight.w800,
     ),
+  );
+}
+
+/// Una acción del menú rápido.
+class CineMenuAction {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const CineMenuAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+}
+
+/// Menú rápido de una tarjeta (mantener pulsado): título arriba y acciones
+/// grandes debajo, manejables con el dedo y con el mando.
+Future<void> showCineQuickMenu(
+  BuildContext context, {
+  required String title,
+  String? subtitle,
+  required List<CineMenuAction> actions,
+}) {
+  return showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'cine_quick_menu',
+    barrierColor: const Color(0xD9000000),
+    pageBuilder: (context, _, _) {
+      final tv = cineIsTv;
+      return Material(
+        type: MaterialType.transparency,
+        child: SafeArea(
+          child: Align(
+            alignment: tv ? Alignment.center : Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1C1C1C),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: tv ? 24 : 19,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (subtitle != null && subtitle.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: cineMuted,
+                                  fontSize: tv ? 17 : 14,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    for (var i = 0; i < actions.length; i++)
+                      CineFocusable(
+                        autofocus: i == 0,
+                        onActivate: () {
+                          Navigator.of(context).pop();
+                          actions[i].onTap();
+                        },
+                        builder: (context, focused) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 110),
+                          color: focused ? Colors.white : Colors.transparent,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: tv ? 16 : 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                actions[i].icon,
+                                color: focused ? Colors.black : Colors.white,
+                                size: tv ? 28 : 24,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  actions[i].label,
+                                  style: TextStyle(
+                                    color: focused ? Colors.black : Colors.white,
+                                    fontSize: tv ? 20 : 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
   );
 }
 
