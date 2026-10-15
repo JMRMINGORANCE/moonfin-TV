@@ -55,6 +55,7 @@ class _CineHomeState extends State<_CineHome> {
     super.initState();
     widget.viewModel.addListener(_onDataChanged);
     widget.viewModel.mediaBarViewModel.addListener(_onDataChanged);
+    widget.prefs.addListener(_onPrefsChanged);
     _scroll.addListener(_onScroll);
     _previousFocusContent =
         NavigationLayout.focusContentFromNavbarNotifier.value;
@@ -408,6 +409,7 @@ class _CineHomeState extends State<_CineHome> {
   void dispose() {
     widget.viewModel.removeListener(_onDataChanged);
     widget.viewModel.mediaBarViewModel.removeListener(_onDataChanged);
+    widget.prefs.removeListener(_onPrefsChanged);
     if (identical(
       NavigationLayout.focusContentFromNavbarNotifier.value,
       _focusContent,
@@ -422,6 +424,11 @@ class _CineHomeState extends State<_CineHome> {
     _heroPlayFocus.dispose();
     _scrollOffset.dispose();
     super.dispose();
+  }
+
+  /// Al tocar las filas en Ajustes, la portada se redibuja al momento.
+  void _onPrefsChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onScroll() {
@@ -683,7 +690,7 @@ class _CineHomeState extends State<_CineHome> {
     void insertFeatured() {
       if (inserted) return;
       inserted = true;
-      if (_downloaded.isNotEmpty) {
+      if (_downloaded.isNotEmpty && widget.prefs.get(cineShowDownloadedRow)) {
         rowWidgets.add(
           CineRow(
             key: const ValueKey('cine_downloaded'),
@@ -698,7 +705,7 @@ class _CineHomeState extends State<_CineHome> {
           ),
         );
       }
-      if (_latest.isNotEmpty) {
+      if (_latest.isNotEmpty && widget.prefs.get(cineShowLatestRow)) {
         rowWidgets.add(
           CineRow(
             key: const ValueKey('cine_latest'),
@@ -709,7 +716,7 @@ class _CineHomeState extends State<_CineHome> {
           ),
         );
       }
-      if (top10.length >= 5) {
+      if (top10.length >= 5 && widget.prefs.get(cineShowTop10Row)) {
         rowWidgets.add(
           CineTop10Row(
             key: const ValueKey('cine_top10'),
@@ -766,7 +773,9 @@ class _CineHomeState extends State<_CineHome> {
     insertFeatured();
 
     // Sagas al final, como en Netflix.
-    for (final c in _collections) {
+    for (final c in widget.prefs.get(cineShowCollectionsRow)
+        ? _collections
+        : const <({String id, String name, List<AggregatedItem> items})>[]) {
       rowWidgets.add(
         CineRow(
           key: ValueKey('cine_collection_${c.id}'),
