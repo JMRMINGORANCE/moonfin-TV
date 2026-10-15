@@ -32,10 +32,11 @@ class CineDetailContent extends StatefulWidget {
     'MusicVideo',
   };
 
-  /// Los títulos que dibuja esta ficha. El resto (música, personas,
-  /// colecciones, solicitudes de Seerr) sigue con las fichas de Moonfin.
+  /// Los títulos que dibuja esta ficha, también los de Seerr que aún no están
+  /// en el servidor (con el botón Descargar). Música, personas y colecciones
+  /// siguen con las fichas de Moonfin.
   static bool supports(ItemDetailViewModel vm) =>
-      kCineUi && !vm.isSeerrOnly && _types.contains(vm.item?.type);
+      kCineUi && _types.contains(vm.item?.type);
 
   final ItemDetailViewModel viewModel;
   final UserPreferences prefs;
@@ -74,7 +75,9 @@ class _CineDetailContentState extends State<CineDetailContent> {
   bool get _isSeries => _item?.type == 'Series';
   bool get _isSeason => _item?.type == 'Season';
   bool get _isEpisode => _item?.type == 'Episode';
-  bool get _hasEpisodes => _isSeries || _isSeason || _isEpisode;
+  bool get _isSeerr => _vm.isSeerrOnly;
+  bool get _hasEpisodes =>
+      !_isSeerr && (_isSeries || _isSeason || _isEpisode);
 
   @override
   void initState() {
@@ -97,7 +100,7 @@ class _CineDetailContentState extends State<CineDetailContent> {
   }
 
   void _beginEpisodesLoad() {
-    if (_loadStarted || !(_isSeries || _isEpisode)) return;
+    if (_loadStarted || _isSeerr || !(_isSeries || _isEpisode)) return;
     _loadStarted = true;
     final vm = _vm;
     if (vm.seriesEpisodes.isNotEmpty) return;
@@ -111,6 +114,12 @@ class _CineDetailContentState extends State<CineDetailContent> {
   // -- imágenes ------------------------------------------------------------
 
   String? _backdropUrl(AggregatedItem item) {
+    if (_isSeerr) {
+      final backdrop = cineTmdbImage(item.rawData['BackdropPath'] as String?, 1280);
+      if (backdrop.isNotEmpty) return backdrop;
+      final poster = cineTmdbImage(item.rawData['PosterPath'] as String?, 780);
+      return poster.isEmpty ? null : poster;
+    }
     final api = _vm.imageApi;
     if (item.backdropImageTags.isNotEmpty) {
       return api.getBackdropImageUrl(
@@ -138,6 +147,7 @@ class _CineDetailContentState extends State<CineDetailContent> {
   }
 
   String? _logoUrl(AggregatedItem item) {
+    if (_isSeerr) return null;
     if (item.logoImageTag != null) {
       return _vm.imageApi.getLogoImageUrl(
         item.id,
@@ -482,7 +492,9 @@ class _CineDetailContentState extends State<CineDetailContent> {
     final tv = cineIsTv;
     final fs = tv ? 18.0 : 14.0;
     final rating = item.communityRating;
-    final seasons = _vm.seasons.length;
+    final seasons = _isSeerr && _isSeries
+        ? _vm.seasons.where((s) => (s.indexNumber ?? 0) > 0).length
+        : _vm.seasons.length;
     final runtime = _isSeries
         ? (seasons > 0
             ? (seasons == 1
