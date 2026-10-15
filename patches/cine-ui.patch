@@ -188,7 +188,7 @@ index b6af477..fd59163 100644
      ),
      HomeSectionConfig(
 diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
-index 654dc28..e626404 100644
+index 654dc28..d3f894e 100644
 --- a/lib/preference/user_preferences.dart
 +++ b/lib/preference/user_preferences.dart
 @@ -808,7 +808,11 @@ class UserPreferences extends ChangeNotifier {
@@ -281,7 +281,61 @@ index 654dc28..e626404 100644
      values: SubtitleMode.values,
    );
  
-@@ -2609,9 +2618,8 @@ class UserPreferences extends ChangeNotifier {
+@@ -2470,7 +2479,8 @@ class UserPreferences extends ChangeNotifier {
+ 
+   static final skipForwardLength = Preference(
+     key: 'skipForwardLength',
+-    defaultValue: 30000,
++    // TaquitoFlix: 10 s hacia los dos lados, como Netflix.
++    defaultValue: 10000,
+   );
+ 
+   static final unpauseRewindDuration = Preference(
+@@ -2528,15 +2538,18 @@ class UserPreferences extends ChangeNotifier {
+   );
+   static final osdButtonOrderTv = Preference(
+     key: 'osdButtonOrderTv',
+-    defaultValue: '',
++    // TaquitoFlix: los accesos del reproductor de Netflix, en ese orden.
++    defaultValue: 'episodes,audio,subtitles,speed,quality,cast',
+   );
+   static final osdButtonOrderMobile = Preference(
+     key: 'osdButtonOrderMobile',
+-    defaultValue: '',
++    // TaquitoFlix: los accesos del reproductor de Netflix, en ese orden.
++    defaultValue: 'episodes,audio,subtitles,speed,quality,cast',
+   );
+   static final osdButtonOrderDesktop = Preference(
+     key: 'osdButtonOrderDesktop',
+-    defaultValue: '',
++    // TaquitoFlix: los accesos del reproductor de Netflix, en ese orden.
++    defaultValue: 'episodes,audio,subtitles,speed,quality,cast',
+   );
+   static final hiddenDetailButtonsTv = Preference(
+     key: 'hiddenDetailButtonsTv',
+@@ -2592,15 +2605,18 @@ class UserPreferences extends ChangeNotifier {
+   );
+   static final hiddenOsdButtonsTv = Preference(
+     key: 'hiddenOsdButtonsTv',
+-    defaultValue: '',
++    // TaquitoFlix: fuera los botones que no usa nadie viendo una película.
++    defaultValue: 'syncPlay,favorite,chapters,castAndCrew,zoom,orientation,info,floatOnTop',
+   );
+   static final hiddenOsdButtonsMobile = Preference(
+     key: 'hiddenOsdButtonsMobile',
+-    defaultValue: '',
++    // TaquitoFlix: fuera los botones que no usa nadie viendo una película.
++    defaultValue: 'syncPlay,favorite,chapters,castAndCrew,zoom,orientation,info,floatOnTop',
+   );
+   static final hiddenOsdButtonsDesktop = Preference(
+     key: 'hiddenOsdButtonsDesktop',
+-    defaultValue: '',
++    // TaquitoFlix: fuera los botones que no usa nadie viendo una película.
++    defaultValue: 'syncPlay,favorite,chapters,castAndCrew,zoom,orientation,info,floatOnTop',
+   );
+   static final mediaBarEnabled = Preference(
+     key: 'mediaBarEnabled',
+@@ -2609,9 +2625,8 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarMode = Preference(
      key: 'mediaBarMode',
@@ -293,7 +347,7 @@ index 654dc28..e626404 100644
    );
  
    static final mediaBarContentType = Preference(
-@@ -2621,7 +2629,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2621,7 +2636,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarSourceType = Preference(
      key: 'mediaBarSourceType',
@@ -302,7 +356,7 @@ index 654dc28..e626404 100644
    );
  
    static final mediaBarItemCount = Preference(
-@@ -2636,7 +2644,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2636,7 +2651,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final navbarColor = Preference(
      key: 'navbarColor',
@@ -311,7 +365,7 @@ index 654dc28..e626404 100644
    );
  
    static final mediaBarOverlayOpacity = Preference(
-@@ -3282,14 +3290,14 @@ class UserPreferences extends ChangeNotifier {
+@@ -3282,14 +3297,14 @@ class UserPreferences extends ChangeNotifier {
    static EnumPreference<LibrarySortBy> librarySortBy(String libraryId) =>
        EnumPreference(
          key: 'library_sort_by_$libraryId',
@@ -675,22 +729,23 @@ index ecb75f7..888930e 100644
      focusNode: focusNode,
      autofocus: autofocus,
 diff --git a/lib/ui/screens/home/home_screen.dart b/lib/ui/screens/home/home_screen.dart
-index 7099124..8134092 100644
+index 7099124..8c5ce3b 100644
 --- a/lib/ui/screens/home/home_screen.dart
 +++ b/lib/ui/screens/home/home_screen.dart
-@@ -87,6 +87,11 @@ import 'home_view_model.dart';
+@@ -87,6 +87,12 @@ import 'home_view_model.dart';
  import '../../widgets/seerr/seerr_genre_label.dart';
  import '../../widgets/skeleton/skeleton_home_row.dart';
  import '../../widgets/skeleton/skeleton_shimmer.dart';
 +import '../../widgets/cine/cine_widgets.dart';
 +import '../../widgets/cine/cine_favorite_button.dart';
 +import '../../widgets/cine/cine_empty_state.dart';
++import '../../widgets/cine/cine_actions.dart';
 +
 +part 'cine_home.dart';
  
  Color get _homeBackground => AppColorScheme.background;
  
-@@ -540,10 +545,12 @@ class _HomeShellState extends State<_HomeShell>
+@@ -540,10 +546,12 @@ class _HomeShellState extends State<_HomeShell>
          _showExitConfirmation(context);
        },
        child: Scaffold(
