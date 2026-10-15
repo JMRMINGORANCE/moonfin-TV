@@ -6,7 +6,7 @@ Basado en [Moonfin](https://github.com/Moonfin-Client/Moonfin-Core) (GPL-2.0). E
 
 - `patches/cine-ui.patch`: cambios sobre archivos de Moonfin (tema, navegación, rutas, nombre, servidor por defecto, idioma).
 - `overlay/`: pantallas nuevas completas (portada, ficha, bibliotecas, Seerr y componentes comunes).
-- `branding/`: dibujo de Taquito (`taquito_head.svg`), logotipo (`taquitoflix_wordmark.svg`), generador de fondos del protector de pantalla (`make_wallpapers.py`) y `rebrand.py`, que en cada compilación cambia los textos a TaquitoFlix y genera todos los iconos, banners y pantallas de carga.
+- `branding/`: dibujo de Taquito (`taquito_head.svg`), logotipo (`taquitoflix_wordmark.svg`), generadores de fondos del protector (`make_wallpapers.py`) y de las capas animadas (`make_layers.py`) y `rebrand.py`, que en cada compilación cambia los textos a TaquitoFlix y genera todos los iconos, banners y pantallas de carga.
 - `tizen/`: empaquetado para Samsung.
 
 GitHub Actions descarga la versión de Moonfin indicada en `UPSTREAM_REF`, aplica el parche, copia `overlay/`, ejecuta `branding/rebrand.py` y compila.
@@ -20,12 +20,13 @@ GitHub Actions descarga la versión de Moonfin indicada en `UPSTREAM_REF`, aplic
 - **Bibliotecas**: siempre ordenadas con lo último añadido primero (también la rejilla de *Ver todo*). Seerr mantiene su propio orden.
 - **Seerr**: todas las categorías del explorador (tendencias, populares, próximos estrenos, géneros, estudios, cadenas, lista de seguimiento y las filas creadas en Seerr) directamente en su pantalla, con etiqueta **YA DESCARGADA** en lo que ya tienes y **DESCARGANDO 45 %** mientras se descarga (si Seerr está conectado a Radarr/Sonarr). Sin solicitudes ni problemas: con la aprobación automática, el botón de películas y series dice **Descargar**.
 - **Buscador**: busca a la vez en tu biblioteca y en Seerr (lo que no tienes sale con el botón Descargar), con búsqueda por voz en Android.
-- **Ajustes**: rediseñados por completo. Tu perfil arriba (cambiar de perfil, cerrar sesión) y secciones claras con el valor actual a la vista: idioma y subtítulos, reproducción (calidad, intros, créditos, siguiente episodio), tu TaquitoFlix (portada, tráileres, descargas, Seerr, PIN), servidor y ayuda. Sin asistente de bienvenida.
+- **Ajustes propios de TaquitoFlix**: tu perfil sobre un fondo de Taquito (cambiar de perfil, cerrar sesión) y nueve categorías con el resumen de lo que tienen puesto: *Idioma y subtítulos* (con vista previa en directo del aspecto de los subtítulos), *Reproducción*, *Portada* (qué filas ves), *Perfil y seguridad* (PIN, perfil al abrir, control parental), *Seerr*, *Descargas*, *Protector de pantalla* (tele), *Servidor* y *Acerca de y ayuda*. Fuera temas, estilos, modo infantil y demás ajustes que solo tenían sentido en Moonfin. Sin asistente de bienvenida.
 - **Taquito te avisa**: búsquedas sin resultados, servidor o Seerr sin conexión… con el perro y un botón de reintentar en lugar de mensajes técnicos.
 - **Reproducción estilo Netflix**: saltos de 10 s (configurables), barra roja y solo los accesos útiles (Episodios, Audio, Subtítulos, Velocidad, Calidad y Enviar). Si el servidor rechaza el vídeo directo, la app lo pide transcodificado antes de mostrar un error. Botón de saltar intro y créditos.
 - **Siguiente episodio estilo Netflix**: al empezar los créditos (si el servidor los tiene marcados) aparece una tarjeta con la imagen del siguiente episodio, «Ver créditos» y «Siguiente episodio», que se va llenando durante la cuenta atrás.
 - **Seguir viendo limpio**: oculta lo que llevas más de 3 meses sin tocar (se puede desactivar en Ajustes).
 - **Sagas en la portada**: filas automáticas con las colecciones del servidor (Harry Potter, Marvel…), en orden de estreno.
+- **Taquito animado al cargar**: al abrir la app y en las esperas del reproductor, Taquito mueve las orejas, bota y parpadea (las capas salen de `branding/make_layers.py`).
 - **Protector de pantalla con Taquito** (tele): tras unos minutos sin usar el mando pasan tres fondos dibujados de Taquito (noche de cine, durmiendo bajo la luna y estilo pop) con zoom lento, la hora y el logo. Se ajusta en *Ajustes → Tu TaquitoFlix*. Los fondos salen de `branding/make_wallpapers.py`.
 - **Cabecera viva en la tele**: al moverte por las filas, arriba aparece la imagen, los datos y la sinopsis del título enfocado.
 - **Menú rápido**: mantener pulsada una carátula (o mantener OK en el mando) en *Seguir viendo* ofrece Reproducir, Ver ficha, Quitar de Seguir viendo, Marcar como visto y Más opciones.
