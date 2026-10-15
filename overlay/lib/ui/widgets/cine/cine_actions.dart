@@ -48,3 +48,21 @@ bool cineIsStaleResume(AggregatedItem item) {
   if (last == null) return false;
   return DateTime.now().toUtc().difference(last.toUtc()) > cineStaleResumeAge;
 }
+
+// Filas propias de la portada (se activan y desactivan en Ajustes → Portada).
+final cineShowDownloadedRow = Preference<bool>(
+  key: 'taquitoflix_row_downloaded',
+  defaultValue: true,
+);
+final cineShowLatestRow = Preference<bool>(
+  key: 'taquitoflix_row_latest',
+  defaultValue: true,
+);
+final cineShowTop10Row = Preference<bool>(
+  key: 'taquitoflix_row_top10',
+  defaultValue: true,
+);
+final cineShowCollectionsRow = Preference<bool>(
+  key: 'taquitoflix_row_collections',
+  defaultValue: true,
+);
