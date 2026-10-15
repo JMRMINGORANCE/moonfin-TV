@@ -877,6 +877,40 @@ index 01793e9..2d0e2c0 100644
            Padding(
              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
              child: _SettingsSearchField(
+diff --git a/lib/ui/screensaver/screensaver_view.dart b/lib/ui/screensaver/screensaver_view.dart
+index 66ed874..45a7b8d 100644
+--- a/lib/ui/screensaver/screensaver_view.dart
++++ b/lib/ui/screensaver/screensaver_view.dart
+@@ -10,6 +10,8 @@ import '../../util/clock_format.dart';
+ import '../widgets/offline_aware_image.dart';
+ import '../widgets/playback/loading_animation_widget.dart';
+ import 'bouncing_box.dart';
++import 'cine_screensaver.dart';
++import '../widgets/cine/cine_widgets.dart' show kCineUi;
+ import 'screensaver_content_service.dart';
+ import 'screensaver_gradient_backdrops.dart';
+ 
+@@ -36,8 +38,9 @@ class _ScreensaverViewState extends State<ScreensaverView> {
+   void initState() {
+     super.initState();
+     _service = ScreensaverContentService(_prefs);
+-    if (_prefs.get(UserPreferences.screensaverBackdrop) ==
+-        ScreensaverBackdrop.library) {
++    if (!kCineUi &&
++        _prefs.get(UserPreferences.screensaverBackdrop) ==
++            ScreensaverBackdrop.library) {
+       _startSlideshow();
+     }
+   }
+@@ -100,6 +103,8 @@ class _ScreensaverViewState extends State<ScreensaverView> {
+ 
+   @override
+   Widget build(BuildContext context) {
++    // TaquitoFlix: protector propio con los fondos de Taquito.
++    if (kCineUi) return const CineScreensaver();
+     final backdrop = _prefs.get(UserPreferences.screensaverBackdrop);
+     final dim = _prefs.get(UserPreferences.screensaverDimming).clamp(0, 90);
+     final component = _prefs.get(UserPreferences.screensaverComponent);
 diff --git a/lib/ui/theme/app_theme_controller.dart b/lib/ui/theme/app_theme_controller.dart
 index ae3e265..ee709bb 100644
 --- a/lib/ui/theme/app_theme_controller.dart

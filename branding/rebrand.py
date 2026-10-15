@@ -226,6 +226,16 @@ def make_images():
     save(compose(640, 360, "#000000", WORDMARK_SVG, 0.95),
          f"{res}/drawable-nodpi/moonfin_tv_banner.png")
 
+    # Fondos del protector de pantalla, dibujados con Taquito.
+    sys.path.insert(0, str(HERE))
+    import make_wallpapers
+    for name, draw in make_wallpapers.WALLPAPERS:
+        img = render(draw(), 1920, 1080)
+        flat = Image.new("RGB", img.size, (0, 0, 0))
+        flat.paste(img, mask=img.split()[3])
+        flat.save(SRC / "assets/images" / f"{name}.jpg", quality=88, optimize=True)
+        log(f"generado assets/images/{name}.jpg 1920x1080")
+
     # Web y Samsung Tizen (el paquete de Tizen usa Icon-512.png).
     for name, size, frac, rounded in [
         ("web/icons/Icon-192.png", 192, 0.86, 0.22),
