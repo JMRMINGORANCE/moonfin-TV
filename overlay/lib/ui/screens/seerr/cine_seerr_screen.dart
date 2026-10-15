@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../data/repositories/seerr_repository.dart';
 import '../../../data/services/seerr/seerr_api_models.dart';
 import '../../../data/viewmodels/seerr_discover_view_model.dart';
 import '../../../l10n/app_localizations.dart';
@@ -38,6 +39,11 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
   final FocusNode _heroPrimary = FocusNode(debugLabel: 'cine_seerr_hero');
   VoidCallback? _previousFocusContent;
   SeerrDiscoverViewModel? _vm;
+
+  /// Películas pedidas desde aquí, para mostrarlas como "Descargando" sin
+  /// esperar a que Seerr recargue.
+  final Set<int> _requested = {};
+  bool _requesting = false;
 
   @override
   void initState() {
@@ -113,6 +119,53 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
     return d != null && d.length >= 4 ? d.substring(0, 4) : '';
   }
 
+  /// Botón principal de la cabecera. Las películas se descargan al momento
+  /// (con la aprobación automática de Seerr); las series abren la ficha para
+  /// elegir temporadas.
+  Future<void> _download(SeerrDiscoverItem i) async {
+    if (i.mediaType != 'movie') {
+      _open(i);
+      return;
+    }
+    if (_requesting || _requested.contains(i.id)) return;
+    setState(() => _requesting = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final title = _title(i);
+    try {
+      final repo = await GetIt.instance.getAsync<SeerrRepository>();
+      await repo.ensureInitialized();
+      await repo.createRequest(mediaId: i.id, mediaType: 'movie');
+      if (!mounted) return;
+      setState(() => _requested.add(i.id));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            cineText(
+              context,
+              'Descargando «$title». Aparecerá en «Recién descargado para ti».',
+              'Downloading “$title”. It will show up in “Just downloaded for you”.',
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            cineText(
+              context,
+              'No se ha podido descargar «$title». Inténtalo desde su ficha.',
+              'Could not download “$title”. Try from its page.',
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _requesting = false);
+    }
+  }
+
   void _open(SeerrDiscoverItem i) => context.push(
         Destinations.seerrMedia(
           i.id.toString(),
@@ -164,7 +217,7 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
     } else if (status == 4) {
       badge = cineText(context, 'PARCIAL', 'PARTIAL');
       color = const Color(0xFF2C7BE5);
-    } else if (status == 2 || status == 3) {
+    } else if (status == 2 || status == 3 || _requested.contains(i.id)) {
       final progress = _progress(i);
       badge = cineText(context, 'DESCARGANDO', 'DOWNLOADING') +
           (progress == null ? '' : ' $progress');
@@ -278,6 +331,9 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
     final rows = vm?.rows ?? const <SeerrDiscoverRow>[];
     final hero = _pickHero(rows);
     final available = hero?.mediaInfo?.status == 5;
+    final heroStatus = hero?.mediaInfo?.status;
+    final downloading = hero != null &&
+        (_requested.contains(hero.id) || heroStatus == 2 || heroStatus == 3);
     final loading = vm == null || (vm.isLoading && rows.isEmpty);
     final error = vm?.error;
 
@@ -332,15 +388,25 @@ class _CineSeerrScreenState extends State<CineSeerrScreen> {
                       autofocus: !mobile,
                       icon: available
                           ? Icons.play_arrow_rounded
-                          : Icons.download_rounded,
+                          : downloading
+                              ? Icons.hourglass_top_rounded
+                              : Icons.download_rounded,
                       label: available
                           ? cineText(context, 'Ver ahora', 'Watch now')
-                          : cineText(context, 'Descargar', 'Download'),
+                          : downloading
+                              ? cineText(context, 'Descargando', 'Downloading')
+                              : cineText(context, 'Descargar', 'Download'),
                       primary: true,
                       expand: expand,
                       onUpEdge: cineFocusNavbar,
                       onLeftEdge: leftEdge,
-                      onTap: () => _open(hero),
+                      onTap: () {
+                        if (available || downloading) {
+                          _open(hero);
+                        } else {
+                          unawaited(_download(hero));
+                        }
+                      },
                     );
                     final info = CineButton(
                       icon: Icons.info_outline_rounded,
