@@ -1895,8 +1895,25 @@ class _CineAboutPage extends StatelessWidget {
                 autofocus: true,
                 icon: Icons.system_update_rounded,
                 title: _t(context, 'Buscar actualizaciones', 'Check for updates'),
-                value: _t(context, 'La app también avisa sola', 'The app also checks on its own'),
-                onTap: () => unawaited(checkAndShowUpdateResult(context)),
+                value: cineCanSelfUpdate
+                    ? _t(context, 'Si hay versión nueva, se descarga e instala', 'Downloads and installs any new version')
+                    : _t(context, 'La app también avisa sola', 'The app also checks on its own'),
+                onTap: () => unawaited(
+                  cineCanSelfUpdate
+                      ? cineCheckAndInstall(context)
+                      : checkAndShowUpdateResult(context),
+                ),
+              ),
+            if (cineCanSelfUpdate)
+              _CineSettingTile(
+                icon: Icons.autorenew_rounded,
+                title: _t(context, 'Instalar actualizaciones solas', 'Install updates automatically'),
+                value: _t(context, 'Al abrir la app, si hay versión nueva', 'When the app opens, if there is a new version'),
+                switchValue: prefs.get(cineAutoInstallUpdates),
+                onTap: () => prefs.set(
+                  cineAutoInstallUpdates,
+                  !prefs.get(cineAutoInstallUpdates),
+                ),
               ),
             _CineSettingTile(
               autofocus: !AppDistribution.supportsInAppUpdates,

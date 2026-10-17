@@ -22,6 +22,30 @@ index ee78647..d13c31b 100644
          // Optional application-id suffix for on-device testing, set through the
          // environment so an unset build is byte-identical to before:
          //   MOONFIN_TEST_ID_SUFFIX=.hwtest flutter build apk --flavor androidTv --debug
+diff --git a/android/app/src/main/AndroidManifest.xml b/android/app/src/main/AndroidManifest.xml
+index 2c1436f..1388505 100644
+--- a/android/app/src/main/AndroidManifest.xml
++++ b/android/app/src/main/AndroidManifest.xml
+@@ -1,5 +1,7 @@
+ <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:installLocation="auto">
+     <uses-permission android:name="android.permission.INTERNET"/>
++    <!-- TaquitoFlix: instalar sus propias actualizaciones. -->
++    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
+@@ -126,6 +128,11 @@
+             </intent-filter>
+         </receiver>
+ 
++        <!-- TaquitoFlix: resultado de la instalación de una actualización. -->
++        <receiver
++            android:name="org.moonfin.androidtv.TaquitoUpdateReceiver"
++            android:exported="false" />
++
+         <provider
+             android:name="org.moonfin.androidtv.MoonfinArtProvider"
+             android:authorities="${applicationId}.artwork"
 diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
 index d7552fc..f94ea4e 100644
 --- a/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
@@ -36,10 +60,22 @@ index d7552fc..f94ea4e 100644
  
          if (targetId.isNullOrEmpty() || streamUrl.isNullOrEmpty()) {
 diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
-index 2e6f8bf..b0857eb 100644
+index 2e6f8bf..636b77a 100644
 --- a/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
 +++ b/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
-@@ -1272,7 +1272,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
+@@ -391,6 +391,11 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
+             flutterEngine.dartExecutor.binaryMessenger,
+             DeviceStorageHelper.CHANNEL,
+         ).setMethodCallHandler(DeviceStorageHelper())
++        // TaquitoFlix: actualizaciones dentro de la app.
++        MethodChannel(
++            flutterEngine.dartExecutor.binaryMessenger,
++            TaquitoUpdater.CHANNEL,
++        ).setMethodCallHandler(TaquitoUpdater(applicationContext))
+ 
+         val exitHistory = ProcessExitHistory.get(this)
+         MethodChannel(
+@@ -1272,7 +1277,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
          val targetId = args["targetId"] as? String
          val streamUrl = args["streamUrl"] as? String
          val contentType = args["contentType"] as? String
@@ -48,7 +84,7 @@ index 2e6f8bf..b0857eb 100644
          val subtitle = args["subtitle"] as? String
          val posterUrl = args["posterUrl"] as? String
          val queueItems = parseQueueItems(args["queueItems"])
-@@ -1476,7 +1476,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
+@@ -1476,7 +1481,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
          return entries.mapNotNull { entry ->
              val map = entry as? Map<*, *> ?: return@mapNotNull null
              val streamUrl = map["streamUrl"] as? String ?: return@mapNotNull null
@@ -57,7 +93,7 @@ index 2e6f8bf..b0857eb 100644
              buildMap<String, Any> {
                  put("streamUrl", streamUrl)
                  put("title", title)
-@@ -1524,7 +1524,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
+@@ -1524,7 +1529,7 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
          val mediaInfo = buildMediaInfo(
              streamUrl = url,
              contentType = contentType,
@@ -80,19 +116,22 @@ index a37db9d..73e7d17 100644
  
      override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
 diff --git a/lib/data/services/app_update_service.dart b/lib/data/services/app_update_service.dart
-index fdaa6db..8c6fafd 100644
+index fdaa6db..cea1151 100644
 --- a/lib/data/services/app_update_service.dart
 +++ b/lib/data/services/app_update_service.dart
-@@ -47,7 +47,7 @@ class AppUpdateService {
+@@ -47,8 +47,9 @@ class AppUpdateService {
    AppUpdateService(this._store, this._userPreferences);
  
    static const _latestReleaseHost = 'api.github.com';
 -  static const _latestReleasePath = '/repos/Moonfin-Client/Moonfin-Core/releases/latest';
+-  static const _checkCooldown = Duration(hours: 24);
 +  static const _latestReleasePath = '/repos/JMRMINGORANCE/moonfin-TV/releases/latest';
-   static const _checkCooldown = Duration(hours: 24);
++  // TaquitoFlix: se mira cada pocas horas para instalar pronto lo nuevo.
++  static const _checkCooldown = Duration(hours: 4);
  
    static const _lastCheckMsKey = 'app_update_last_check_ms';
-@@ -228,7 +228,7 @@ class AppUpdateService {
+   static const _lastNotifiedVersionKey = 'app_update_last_notified_version';
+@@ -228,7 +229,7 @@ class AppUpdateService {
        }
  
        final htmlUrl = decoded['html_url']?.toString() ??
@@ -837,15 +876,16 @@ index 1f0d8c6..5a53604 100644
                  ),
                ),
 diff --git a/lib/ui/screens/settings/settings_side_panel.dart b/lib/ui/screens/settings/settings_side_panel.dart
-index b4bf2fa..5afc958 100644
+index b4bf2fa..9a2dbea 100644
 --- a/lib/ui/screens/settings/settings_side_panel.dart
 +++ b/lib/ui/screens/settings/settings_side_panel.dart
-@@ -113,6 +113,16 @@ import '../../../preference/detail_section_layout.dart';
+@@ -113,6 +113,17 @@ import '../../../preference/detail_section_layout.dart';
  import '../detail/detail_buttons.dart';
  import '../playback/osd_buttons.dart';
  import '../syncplay/syncplay_screen.dart';
 +import '../../widgets/cine/cine_widgets.dart';
 +import '../../widgets/cine/cine_actions.dart';
++import '../../widgets/cine/cine_updater.dart';
 +import '../../widgets/cine/cine_taquito_loader.dart';
 +import '../../screensaver/cine_screensaver.dart';
 +import '../../screensaver/screensaver_controller.dart';
@@ -857,7 +897,7 @@ index b4bf2fa..5afc958 100644
  
  part 'panel/settings_panel_infra.dart';
  part 'panel/settings_search_field.dart';
-@@ -145,6 +155,7 @@ part 'panel/automation_queue_screen.dart';
+@@ -145,6 +156,7 @@ part 'panel/automation_queue_screen.dart';
  part 'panel/advanced_options_screen.dart';
  part 'panel/syncplay_settings_screen.dart';
  part 'panel/settings_panel_tiles.dart';
@@ -865,7 +905,7 @@ index b4bf2fa..5afc958 100644
  
  bool get _showThemeEditorEntry =>
      PlatformDetection.isWeb && webRuntimeConfig.pluginMode;
-@@ -240,6 +251,10 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -240,6 +252,10 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
          });
          return;
        }
@@ -876,7 +916,7 @@ index b4bf2fa..5afc958 100644
        _firstFocusNode.requestFocus();
        focusScope.requestFocus(_firstFocusNode);
      });
-@@ -321,6 +336,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -321,6 +337,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
                onTap: () => unawaited(_exitKidsMode(context)),
              ),
            ]
@@ -894,7 +934,7 @@ index b4bf2fa..5afc958 100644
          : <_PanelEntry>[
              if (showAdmin)
                _PanelEntry(
-@@ -385,6 +411,18 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -385,6 +412,18 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
              ),
            ];
  
@@ -913,7 +953,7 @@ index b4bf2fa..5afc958 100644
      return Scaffold(
        appBar: AppBar(
          leading: PlatformDetection.isTV
-@@ -398,6 +436,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -398,6 +437,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
        ),
        body: Column(
          children: [
@@ -969,6 +1009,27 @@ index ae3e265..ee709bb 100644
        VisualThemeId.neonPulse => AppTheme.neonPulseMagenta,
        VisualThemeId.glass => AppTheme.white,
        VisualThemeId.eightbitHero => AppTheme.eightBitGold,
+diff --git a/lib/ui/widgets/app_update_banner.dart b/lib/ui/widgets/app_update_banner.dart
+index b017b6b..e1f8ebe 100644
+--- a/lib/ui/widgets/app_update_banner.dart
++++ b/lib/ui/widgets/app_update_banner.dart
+@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
+ import '../../data/services/app_update_service.dart';
+ import '../../l10n/app_localizations.dart';
+ import '../../util/platform_detection.dart';
++import 'cine/cine_updater.dart';
+ import 'status_banner_pill.dart';
+ 
+ /// Floating glass pill announcing a newer GitHub release. Mirrors the offline
+@@ -71,6 +72,8 @@ class _AppUpdateBannerState extends State<AppUpdateBanner>
+           GetIt.instance<AppUpdateService>().checkForUpdateIfDue;
+       final update = await check();
+       if (!mounted || update == null) return;
++      // TaquitoFlix: en Android y Android TV se descarga e instala sola.
++      if (widget.checkForUpdate == null && cineMaybeAutoInstall(update)) return;
+       setState(() => _update = update);
+       _entrance.forward();
+       _autoDismissTimer = Timer(_autoDismissDuration, _dismiss);
 diff --git a/lib/ui/widgets/left_sidebar.dart b/lib/ui/widgets/left_sidebar.dart
 index bf043e3..dae1a2a 100644
 --- a/lib/ui/widgets/left_sidebar.dart
