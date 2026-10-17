@@ -170,19 +170,40 @@ jobs:
             echo "Sin certificados Tizen: se publica solo el WGT sin firmar."
             exit 0
           fi
-          for V in 5.6 5.5; do
+          LOG="$RUNNER_TEMP/tizen.log"
+          : > "$LOG"
+          # Si algo falla, el motivo sale como aviso en el resumen de la ejecución.
+          fallo() {
+            cat "$LOG"
+            MSG=$(tail -c 1800 "$LOG" | tr '\r\n' '  ' | sed 's/%/%25/g')
+            echo "::error title=Firma Tizen - $1::$MSG"
+            exit 1
+          }
+          sudo apt-get install -y -qq zip unzip libncurses6 > /dev/null 2>&1 || true
+          OK=
+          for V in 6.1 5.6 5.5; do
             URL="https://download.tizen.org/sdk/Installer/tizen-studio_${V}/web-cli_Tizen_Studio_${V}_ubuntu-64.bin"
-            if curl -fsSL -o tizen-cli.bin "$URL"; then break; fi
+            if curl -fsSL -o tizen-cli.bin "$URL" >> "$LOG" 2>&1; then OK=$V; break; fi
           done
+          [ -n "$OK" ] || fallo "descarga del CLI"
+          echo "Tizen CLI $OK" | tee -a "$LOG"
           chmod +x tizen-cli.bin
-          ./tizen-cli.bin --accept-license "$HOME/tizen-studio"
-          export PATH="$HOME/tizen-studio/tools/ide/bin:$PATH"
-          printf '%s' "$TIZEN_AUTHOR_P12" | base64 --decode > author.p12
-          printf '%s' "$TIZEN_DISTRIBUTOR_P12" | base64 --decode > distributor.p12
-          tizen security-profiles add -n cine -a "$PWD/author.p12" -p "$TIZEN_AUTHOR_PASSWORD" \
-            -d "$PWD/distributor.p12" -dp "$TIZEN_DISTRIBUTOR_PASSWORD"
-          tizen package -t wgt -s cine -- "$PWD/tizen-pkg"
-          mv tizen-pkg/*.wgt "out/TaquitoFlix_Tizen_v${VERSION}.wgt"
+          ./tizen-cli.bin --accept-license "$HOME/tizen-studio" >> "$LOG" 2>&1 || fallo "instalación del CLI $OK"
+          TIZEN="$HOME/tizen-studio/tools/ide/bin/tizen"
+          [ -x "$TIZEN" ] || { ls -la "$HOME/tizen-studio" "$HOME/tizen-studio/tools" >> "$LOG" 2>&1; fallo "CLI sin ejecutable tizen"; }
+          printf '%s' "$TIZEN_AUTHOR_P12" | base64 --decode > "$RUNNER_TEMP/author.p12"
+          printf '%s' "$TIZEN_DISTRIBUTOR_P12" | base64 --decode > "$RUNNER_TEMP/distributor.p12"
+          "$TIZEN" security-profiles add -n cine -a "$RUNNER_TEMP/author.p12" -p "$TIZEN_AUTHOR_PASSWORD" \
+            -d "$RUNNER_TEMP/distributor.p12" -dp "$TIZEN_DISTRIBUTOR_PASSWORD" >> "$LOG" 2>&1 || fallo "perfil de certificados"
+          "$TIZEN" package -t wgt -s cine -- "$PWD/tizen-pkg" >> "$LOG" 2>&1 || fallo "empaquetado"
+          WGT=$(ls tizen-pkg/*.wgt 2>/dev/null | head -1)
+          [ -n "$WGT" ] || fallo "no se generó el .wgt firmado"
+          unzip -l "$WGT" | grep -q "author-signature.xml" || fallo "el .wgt no lleva firma de autor"
+          unzip -l "$WGT" | grep -q "signature1.xml" || fallo "el .wgt no lleva firma de distribuidor"
+          mv "$WGT" "out/TaquitoFlix_Tizen_v${VERSION}.wgt"
+          # Firmado correctamente: el WGT sin firmar ya no hace falta.
+          rm -f out/*_sin-firmar.wgt
+          cat "$LOG"
 
       - uses: actions/upload-artifact@v4
         with:

@@ -625,6 +625,17 @@ class _CineHomeState extends State<_CineHome> {
     return _ContentRowsState._resolveImageUrl(item, api, height, true, scale);
   }
 
+  /// Biblioteca: imagen apaisada y su nombre, sin vista previa ni menú.
+  CineTile _libraryTile(HomeRow row, AggregatedItem item) {
+    final base = _tile(row, item, true);
+    return CineTile(
+      id: base.id,
+      title: base.title,
+      imageUrl: base.imageUrl,
+      onTap: base.onTap,
+    );
+  }
+
   CineTile _latestTile(AggregatedItem item) {
     final base = _tile(null, item, false);
     if (!_isRecent(item)) return base;
@@ -686,36 +697,59 @@ class _CineHomeState extends State<_CineHome> {
     final focusAlign = tv ? 0.82 : 0.5;
     final hideStale = widget.prefs.get(cineHideStaleResume);
     final rowWidgets = <Widget>[];
+
+    // Orden de la portada: tus bibliotecas, "Recién descargado para ti",
+    // "Lo último añadido" y después todo lo demás (Seguir viendo, Top 10…).
+    final libraryRow = allRows.firstWhereOrNull(
+      (r) =>
+          (r.rowType == HomeRowType.libraryTiles ||
+              r.rowType == HomeRowType.libraryTilesSmall) &&
+          r.items.isNotEmpty,
+    );
+    if (libraryRow != null) {
+      rowWidgets.add(
+        CineRow(
+          key: const ValueKey('cine_libraries'),
+          title: cineText(context, 'Mis bibliotecas', 'My libraries'),
+          tiles: [
+            for (final it in libraryRow.items) _libraryTile(libraryRow, it),
+          ],
+          landscape: true,
+          onTileFocused: tileFocused,
+          focusAlignment: focusAlign,
+        ),
+      );
+    }
+    if (_downloaded.isNotEmpty && widget.prefs.get(cineShowDownloadedRow)) {
+      rowWidgets.add(
+        CineRow(
+          key: const ValueKey('cine_downloaded'),
+          title: cineText(
+            context,
+            'Recién descargado para ti',
+            'Just downloaded for you',
+          ),
+          tiles: [for (final it in _downloaded) _latestTile(it)],
+          onTileFocused: tileFocused,
+          focusAlignment: focusAlign,
+        ),
+      );
+    }
+    if (_latest.isNotEmpty && widget.prefs.get(cineShowLatestRow)) {
+      rowWidgets.add(
+        CineRow(
+          key: const ValueKey('cine_latest'),
+          title: cineText(context, 'Lo último añadido', 'Recently added'),
+          tiles: [for (final it in _latest) _latestTile(it)],
+          onTileFocused: tileFocused,
+          focusAlignment: focusAlign,
+        ),
+      );
+    }
     var inserted = false;
     void insertFeatured() {
       if (inserted) return;
       inserted = true;
-      if (_downloaded.isNotEmpty && widget.prefs.get(cineShowDownloadedRow)) {
-        rowWidgets.add(
-          CineRow(
-            key: const ValueKey('cine_downloaded'),
-            title: cineText(
-              context,
-              'Recién descargado para ti',
-              'Just downloaded for you',
-            ),
-            tiles: [for (final it in _downloaded) _latestTile(it)],
-            onTileFocused: tileFocused,
-            focusAlignment: focusAlign,
-          ),
-        );
-      }
-      if (_latest.isNotEmpty && widget.prefs.get(cineShowLatestRow)) {
-        rowWidgets.add(
-          CineRow(
-            key: const ValueKey('cine_latest'),
-            title: cineText(context, 'Lo último añadido', 'Recently added'),
-            tiles: [for (final it in _latest) _latestTile(it)],
-            onTileFocused: tileFocused,
-            focusAlignment: focusAlign,
-          ),
-        );
-      }
       if (top10.length >= 5 && widget.prefs.get(cineShowTop10Row)) {
         rowWidgets.add(
           CineTop10Row(

@@ -970,7 +970,7 @@ index ae3e265..ee709bb 100644
        VisualThemeId.glass => AppTheme.white,
        VisualThemeId.eightbitHero => AppTheme.eightBitGold,
 diff --git a/lib/ui/widgets/left_sidebar.dart b/lib/ui/widgets/left_sidebar.dart
-index bf043e3..77f362f 100644
+index bf043e3..dae1a2a 100644
 --- a/lib/ui/widgets/left_sidebar.dart
 +++ b/lib/ui/widgets/left_sidebar.dart
 @@ -52,6 +52,7 @@ import '../navigation/app_router.dart';
@@ -1000,7 +1000,31 @@ index bf043e3..77f362f 100644
    });
  
    @override
-@@ -376,6 +382,7 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+@@ -90,6 +96,14 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+   final _sidebarFocus = FocusScopeNode(debugLabel: 'LeftSidebar');
+   final _homeFocusNode = FocusNode(debugLabel: 'LeftSidebarHome');
+   final _settingsFocusNode = FocusNode(debugLabel: 'LeftSidebarSettings');
++  // TaquitoFlix: cabecera "Mis bibliotecas" y grupo de sus bibliotecas, para
++  // que Abajo entre en la lista desplegada en vez de saltar a Ajustes.
++  final _librariesFocusNode = FocusNode(debugLabel: 'LeftSidebarLibraries');
++  final _librariesGroupNode = FocusNode(
++    debugLabel: 'LeftSidebarLibrariesGroup',
++    canRequestFocus: false,
++    skipTraversal: true,
++  );
+   final _serverMessagesFocusNode = FocusNode(
+     debugLabel: 'LeftSidebarServerMessages',
+   );
+@@ -238,6 +252,8 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+     _librariesReloadDebounce?.cancel();
+     _homeFocusNode.dispose();
+     _settingsFocusNode.dispose();
++    _librariesFocusNode.dispose();
++    _librariesGroupNode.dispose();
+     _serverMessagesFocusNode.dispose();
+     _friendsFocusNode.dispose();
+     _profileFocusNode.dispose();
+@@ -376,6 +392,7 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
    void _expand() {
      if (_isExpanded) return;
      setState(() => _isExpanded = true);
@@ -1008,7 +1032,7 @@ index bf043e3..77f362f 100644
      _labelTimer?.cancel();
      final delay = PlatformDetection.isTV
          ? const Duration(milliseconds: 150)
-@@ -393,6 +400,7 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+@@ -393,6 +410,7 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
        _showLabels = false;
        _librariesExpanded = false;
      });
@@ -1016,7 +1040,62 @@ index bf043e3..77f362f 100644
    }
  
    void _toggle() {
-@@ -758,7 +766,11 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+@@ -520,6 +538,54 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+     return KeyEventResult.ignored;
+   }
+ 
++  List<FocusNode> get _libraryNodes => _librariesGroupNode.traversalDescendants
++      .where((n) => n.context != null && n.canRequestFocus)
++      .toList();
++
++  /// Abajo desde "Mis bibliotecas" abierta: a la primera biblioteca.
++  KeyEventResult _onLibrariesHeaderKey(FocusNode node, KeyEvent event) {
++    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
++      return KeyEventResult.ignored;
++    }
++    if (event.logicalKey != LogicalKeyboardKey.arrowDown ||
++        !_librariesExpanded ||
++        !_librariesFocusNode.hasFocus) {
++      return KeyEventResult.ignored;
++    }
++    final libraries = _libraryNodes;
++    if (libraries.isEmpty) return KeyEventResult.ignored;
++    libraries.first.requestFocus();
++    return KeyEventResult.handled;
++  }
++
++  /// Arriba desde la primera biblioteca vuelve a "Mis bibliotecas"; Abajo
++  /// recorre la lista en orden aunque el desplegable aún se esté animando.
++  KeyEventResult _onLibrariesListKey(FocusNode node, KeyEvent event) {
++    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
++      return KeyEventResult.ignored;
++    }
++    final up = event.logicalKey == LogicalKeyboardKey.arrowUp;
++    final down = event.logicalKey == LogicalKeyboardKey.arrowDown;
++    if (!up && !down) return KeyEventResult.ignored;
++    final libraries = _libraryNodes;
++    final index = libraries.indexWhere((n) => n.hasPrimaryFocus);
++    if (index < 0) return KeyEventResult.ignored;
++    if (up) {
++      if (index == 0) {
++        _librariesFocusNode.requestFocus();
++      } else {
++        libraries[index - 1].requestFocus();
++      }
++      return KeyEventResult.handled;
++    }
++    if (index < libraries.length - 1) {
++      libraries[index + 1].requestFocus();
++      return KeyEventResult.handled;
++    }
++    // Desde la última biblioteca sigue hacia lo que haya debajo del menú.
++    return KeyEventResult.ignored;
++  }
++
+   bool _isDescendantOf(FocusNode? child, FocusNode parent) {
+     FocusNode? current = child;
+     while (current != null) {
+@@ -758,7 +824,11 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
    }
  
    Widget _buildTvLayout() {
@@ -1029,6 +1108,47 @@ index bf043e3..77f362f 100644
      final isNeon = ThemeRegistry.active.id == ThemeRegistry.neonPulseId;
      final desktopHoverRail =
          (PlatformDetection.isDesktop || (PlatformDetection.isWeb && !PlatformDetection.useMobileUi)) && !PlatformDetection.isTV;
+@@ -1134,8 +1204,13 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+                     },
+                   ),
+                 if (showLibraries && navLibraries.isNotEmpty) ...[
+-                  _SidebarItem(
++                  Focus(
++                    canRequestFocus: false,
++                    skipTraversal: true,
++                    onKeyEvent: _onLibrariesHeaderKey,
++                    child: _SidebarItem(
+                     key: const ValueKey('sidebar-libraries'),
++                    focusNode: _librariesFocusNode,
+                     baseColor: nextMainSidebarColor(),
+                     iconBuilder: (size, color) => Image.asset(
+                       'assets/icons/clapperboard.png',
+@@ -1165,12 +1240,16 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+                       () => _librariesExpanded = !_librariesExpanded,
+                     ),
+                   ),
++                  ),
+                   AnimatedSize(
+                     key: const ValueKey('sidebar-libraries-children'),
+                     duration: const Duration(milliseconds: 250),
+                     curve: Curves.easeInOut,
+                     child: _librariesExpanded
+-                        ? Column(
++                        ? Focus(
++                            focusNode: _librariesGroupNode,
++                            onKeyEvent: _onLibrariesListKey,
++                            child: Column(
+                             children: navLibraries
+                                 .map(
+                                   (lib) => _SidebarLibraryItem(
+@@ -1193,6 +1272,7 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+                                   ),
+                                 )
+                                 .toList(),
++                          ),
+                           )
+                         : const SizedBox.shrink(),
+                   ),
 diff --git a/lib/ui/widgets/navigation_layout.dart b/lib/ui/widgets/navigation_layout.dart
 index 9698869..dd5c13f 100644
 --- a/lib/ui/widgets/navigation_layout.dart

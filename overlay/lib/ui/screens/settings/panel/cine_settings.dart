@@ -1306,6 +1306,12 @@ class _CineHomePage extends StatelessWidget {
           ]),
           _cineSection(context, _t(context, 'Filas', 'Rows'), [
             section(
+              Icons.video_library_outlined,
+              _t(context, 'Mis bibliotecas', 'My libraries'),
+              _t(context, 'Justo debajo de la portada', 'Right below the header'),
+              const [HomeSectionType.libraryTilesSmall],
+            ),
+            section(
               Icons.play_circle_outline_rounded,
               _t(context, 'Seguir viendo', 'Continue watching'),
               _t(context, 'Lo que dejaste a medias', 'What you left halfway'),
