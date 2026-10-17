@@ -204,6 +204,29 @@ jobs:
             -d "$RUNNER_TEMP/distributor.p12" -dp "$TIZEN_DISTRIBUTOR_PASSWORD" >> "$LOG" 2>&1 || fallo "perfil de certificados"
           "$TIZEN" cli-config "profiles.path=$HOME/tizen-studio-data/profile/profiles.xml" >> "$LOG" 2>&1 || fallo "configuración del CLI"
           "$TIZEN" security-profiles list >> "$LOG" 2>&1 || true
+          # En un servidor sin escritorio el CLI no puede guardar las contraseñas
+          # en su almacén cifrado y luego falla con "Invalid password": se
+          # escriben directamente en el perfil.
+          python3 - "$HOME/tizen-studio-data/profile/profiles.xml" >> "$LOG" 2>&1 <<'PY' || fallo "contraseñas del perfil"
+          import os, sys, xml.etree.ElementTree as ET
+          path = sys.argv[1]
+          tree = ET.parse(path)
+          author = os.environ["TIZEN_AUTHOR_PASSWORD"]
+          dist = os.environ["TIZEN_DISTRIBUTOR_PASSWORD"]
+          n = 0
+          for prof in tree.getroot().iter("profile"):
+              if prof.get("name") != "cine":
+                  continue
+              for item in prof.iter("profileitem"):
+                  if not item.get("key"):
+                      continue
+                  item.set("password", author if item.get("distributor") == "0" else dist)
+                  n += 1
+          tree.write(path, encoding="UTF-8", xml_declaration=True)
+          print(f"Contraseñas escritas en {n} certificados del perfil")
+          if n < 2:
+              sys.exit(1)
+          PY
           : > "$LOG"
           "$TIZEN" package -t wgt -s cine -- "$PWD/tizen-pkg" >> "$LOG" 2>&1 || fallo "empaquetado"
           WGT=$(ls tizen-pkg/*.wgt 2>/dev/null | head -1)
