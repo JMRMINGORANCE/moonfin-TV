@@ -192,6 +192,8 @@ jobs:
   release:
     name: Publicar release
     needs: [android, tizen]
+    # Solo main publica: en otras ramas la compilación sirve de prueba.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
