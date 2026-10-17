@@ -837,7 +837,7 @@ index 1f0d8c6..5a53604 100644
                  ),
                ),
 diff --git a/lib/ui/screens/settings/settings_side_panel.dart b/lib/ui/screens/settings/settings_side_panel.dart
-index 01793e9..f60bf83 100644
+index 01793e9..4baf8ba 100644
 --- a/lib/ui/screens/settings/settings_side_panel.dart
 +++ b/lib/ui/screens/settings/settings_side_panel.dart
 @@ -107,6 +107,16 @@ import '../../../preference/detail_section_layout.dart';
@@ -865,7 +865,18 @@ index 01793e9..f60bf83 100644
  
  bool get _showThemeEditorEntry =>
      PlatformDetection.isWeb && webRuntimeConfig.pluginMode;
-@@ -312,6 +323,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -234,6 +245,10 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+         });
+         return;
+       }
++      // TaquitoFlix: si el nodo nunca llegó a montarse (los ajustes propios no
++      // lo usan), pedir el foco lo colgaría del panel sin widget detrás: el
++      // cursor desaparecía y el mando dejaba de moverse por los ajustes.
++      if (_firstFocusNode.context == null) return;
+       _firstFocusNode.requestFocus();
+       focusScope.requestFocus(_firstFocusNode);
+     });
+@@ -312,6 +327,17 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
                onTap: () => unawaited(_exitKidsMode(context)),
              ),
            ]
@@ -883,7 +894,7 @@ index 01793e9..f60bf83 100644
          : <_PanelEntry>[
              if (showAdmin)
                _PanelEntry(
-@@ -376,6 +398,18 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -376,6 +402,18 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
              ),
            ];
  
@@ -902,7 +913,7 @@ index 01793e9..f60bf83 100644
      return Scaffold(
        appBar: AppBar(
          leading: PlatformDetection.isTV
-@@ -389,6 +423,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
+@@ -389,6 +427,8 @@ class _SettingsSidePanelState extends ConsumerState<SettingsSidePanel> {
        ),
        body: Column(
          children: [
@@ -958,8 +969,68 @@ index ae3e265..ee709bb 100644
        VisualThemeId.neonPulse => AppTheme.neonPulseMagenta,
        VisualThemeId.glass => AppTheme.white,
        VisualThemeId.eightbitHero => AppTheme.eightBitGold,
+diff --git a/lib/ui/widgets/left_sidebar.dart b/lib/ui/widgets/left_sidebar.dart
+index 14e9d2a..c3f62c0 100644
+--- a/lib/ui/widgets/left_sidebar.dart
++++ b/lib/ui/widgets/left_sidebar.dart
+@@ -51,6 +51,7 @@ import '../navigation/app_router.dart';
+ import 'offline_aware_image.dart';
+ import 'paced_network_image.dart';
+ import 'adaptive/sf_symbol.dart';
++import 'cine/cine_widgets.dart' show kCineUi;
+ 
+ const _kExpandedWidthDesktop = 240.0;
+ const _kExpandedWidthMobile = 260.0;
+@@ -66,6 +67,10 @@ class LeftSidebar extends StatefulWidget {
+   final FocusNode? contentFocusNode;
+   final bool showBackButton;
+ 
++  /// TaquitoFlix: avisa cuando el menú se abre o se cierra, para oscurecer el
++  /// contenido de detrás.
++  final ValueNotifier<bool>? expandedNotifier;
++
+   /// Notifier updated when the sidebar's focus state changes.
+   /// Use this instead of walking the element tree to determine if the
+   /// current focus is within the sidebar; it's resilient during teardown.
+@@ -76,6 +81,7 @@ class LeftSidebar extends StatefulWidget {
+     this.activeRoute,
+     this.contentFocusNode,
+     this.showBackButton = false,
++    this.expandedNotifier,
+   });
+ 
+   @override
+@@ -377,6 +383,7 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+   void _expand() {
+     if (_isExpanded) return;
+     setState(() => _isExpanded = true);
++    widget.expandedNotifier?.value = true;
+     _labelTimer?.cancel();
+     final delay = PlatformDetection.isTV
+         ? const Duration(milliseconds: 150)
+@@ -394,6 +401,7 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+       _showLabels = false;
+       _librariesExpanded = false;
+     });
++    widget.expandedNotifier?.value = false;
+   }
+ 
+   void _toggle() {
+@@ -747,7 +755,11 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
+   }
+ 
+   Widget _buildTvLayout() {
+-    final backdropColor = _overlayColor().withValues(alpha: _overlayOpacity());
++    // TaquitoFlix: el menú abierto va sobre un fondo casi opaco; el contenido
++    // se oscurece aparte (ver NavigationLayout) para que no se mezclen.
++    final backdropColor = kCineUi
++        ? const Color(0xF50A0A0A)
++        : _overlayColor().withValues(alpha: _overlayOpacity());
+     final isNeon = ThemeRegistry.active.id == ThemeRegistry.neonPulseId;
+     final desktopHoverRail =
+         (PlatformDetection.isDesktop || (PlatformDetection.isWeb && !PlatformDetection.useMobileUi)) && !PlatformDetection.isTV;
 diff --git a/lib/ui/widgets/navigation_layout.dart b/lib/ui/widgets/navigation_layout.dart
-index 9698869..88da71b 100644
+index 9698869..dd5c13f 100644
 --- a/lib/ui/widgets/navigation_layout.dart
 +++ b/lib/ui/widgets/navigation_layout.dart
 @@ -16,6 +16,7 @@ import 'package:moonfin_design/moonfin_design.dart';
@@ -982,6 +1053,78 @@ index 9698869..88da71b 100644
      if (position == NavbarPosition.bottom && !allowBottomNavbar) {
        return NavbarPosition.top;
      }
+@@ -115,6 +121,8 @@ class _NavigationLayoutState extends State<NavigationLayout>
+     with WidgetsBindingObserver, RouteAware {
+   final _prefs = GetIt.instance<UserPreferences>();
+   final _contentFocusNode = FocusNode(debugLabel: 'NavigationContent');
++  // TaquitoFlix: menú lateral abierto (para oscurecer el contenido).
++  final _sidebarExpanded = ValueNotifier<bool>(false);
+   final _contentKey = GlobalKey(debugLabel: 'navigationLayoutContent');
+   final ValueNotifier<double> _toolbarScrollOffset = ValueNotifier<double>(0.0);
+   late NavbarPosition _position;
+@@ -225,6 +233,7 @@ class _NavigationLayoutState extends State<NavigationLayout>
+     _playSub?.cancel();
+     _queueSub?.cancel();
+     _contentFocusNode.dispose();
++    _sidebarExpanded.dispose();
+     _toolbarScrollOffset.dispose();
+     super.dispose();
+   }
+@@ -479,6 +488,7 @@ class _NavigationLayoutState extends State<NavigationLayout>
+         activeRoute: widget.activeRoute,
+         contentFocusNode: _contentFocusNode,
+         showBackButton: widget.showBackButton,
++        expandedNotifier: _sidebarExpanded,
+       ),
+     );
+ 
+@@ -489,6 +499,8 @@ class _NavigationLayoutState extends State<NavigationLayout>
+             child: Stack(
+               children: [
+                 Positioned.fill(child: content),
++                if (kCineUi && PlatformDetection.isTV)
++                  Positioned.fill(child: _cineSidebarScrim()),
+                 Positioned(
+                   top: 0,
+                   left: 0,
+@@ -526,6 +538,37 @@ class _NavigationLayoutState extends State<NavigationLayout>
+     );
+   }
+ 
++  /// TaquitoFlix: con el menú abierto, el contenido se oscurece de izquierda a
++  /// derecha (como en las plataformas de streaming), así el menú se lee limpio
++  /// y no se mezcla con carátulas ni textos de detrás.
++  Widget _cineSidebarScrim() {
++    return IgnorePointer(
++      child: ValueListenableBuilder<bool>(
++        valueListenable: _sidebarExpanded,
++        builder: (context, expanded, _) => AnimatedOpacity(
++          opacity: expanded ? 1.0 : 0.0,
++          duration: const Duration(milliseconds: 200),
++          curve: Curves.easeOut,
++          child: const DecoratedBox(
++            decoration: BoxDecoration(
++              gradient: LinearGradient(
++                begin: Alignment.centerLeft,
++                end: Alignment.centerRight,
++                colors: [
++                  Color(0xF2000000),
++                  Color(0xD9000000),
++                  Color(0x99000000),
++                  Color(0x59000000),
++                ],
++                stops: [0.0, 0.22, 0.55, 1.0],
++              ),
++            ),
++          ),
++        ),
++      ),
++    );
++  }
++
+   Widget _buildFloatingBackButton() {
+     final overlayColor = OverlayColorPalette.resolveColor(
+       _prefs.get(UserPreferences.navbarColor),
 diff --git a/lib/ui/widgets/playback/loading_animation_widget.dart b/lib/ui/widgets/playback/loading_animation_widget.dart
 index 7f493ad..f375e1a 100644
 --- a/lib/ui/widgets/playback/loading_animation_widget.dart
@@ -1037,6 +1180,135 @@ index 72c9768..bb8b230 100644
      final l10n = AppLocalizations.of(context);
      final item = widget.nextItem;
      final tvFocusMode =
+diff --git a/lib/ui/widgets/settings/settings_panel.dart b/lib/ui/widgets/settings/settings_panel.dart
+index 8d7aa34..7147b6d 100644
+--- a/lib/ui/widgets/settings/settings_panel.dart
++++ b/lib/ui/widgets/settings/settings_panel.dart
+@@ -9,6 +9,7 @@ import '../../../l10n/app_localizations.dart';
+ import '../../../util/idiom/app_ui_idiom.dart';
+ import '../../../util/platform_detection.dart';
+ import '../../../util/focus/dpad_keys.dart';
++import '../cine/cine_widgets.dart' show kCineUi;
+ import '../overlay_sheet.dart';
+ import 'preference_tiles.dart';
+ 
+@@ -168,12 +169,116 @@ class _SettingsNavigatorState extends State<_SettingsNavigator> {
+   );
+   bool _rootDismissInProgress = false;
+ 
++  // TaquitoFlix: con el mando, el foco nunca debe quedarse "en el aire" dentro
++  // de los ajustes (sin nada resaltado y sin poder moverse). Si se pierde, se
++  // devuelve al ajuste visible más cercano al último que tuvo el foco.
++  bool get _guardFocus => kCineUi && !PlatformDetection.useMobileUi;
++  bool _focusCheckScheduled = false;
++  int _focusRetries = 0;
++  Rect? _lastFocusRect;
++
++  @override
++  void initState() {
++    super.initState();
++    if (_guardFocus) {
++      FocusManager.instance.addListener(_onPrimaryFocusChanged);
++    }
++  }
++
+   @override
+   void dispose() {
++    if (_guardFocus) {
++      FocusManager.instance.removeListener(_onPrimaryFocusChanged);
++    }
+     _trapScope.dispose();
+     super.dispose();
+   }
+ 
++  void _onPrimaryFocusChanged() {
++    final primary = FocusManager.instance.primaryFocus;
++    if (primary != null &&
++        primary.ancestors.contains(_trapScope) &&
++        _isUsableFocus(primary)) {
++      try {
++        _lastFocusRect = primary.rect;
++      } catch (_) {}
++    }
++    _scheduleFocusCheck();
++  }
++
++  void _scheduleFocusCheck() {
++    if (_focusCheckScheduled || !mounted) return;
++    _focusCheckScheduled = true;
++    WidgetsBinding.instance.addPostFrameCallback((_) {
++      _focusCheckScheduled = false;
++      _checkFocus();
++    });
++  }
++
++  static bool _routeIsCurrent(BuildContext context) =>
++      ModalRoute.of(context)?.isCurrent ?? true;
++
++  /// Un nodo real, con widget detrás, en la página de ajustes que está a la
++  /// vista. Lo que esté fuera del panel (otro diálogo encima) también vale.
++  bool _isUsableFocus(FocusNode? node) {
++    if (node == null || node is FocusScopeNode) return false;
++    final ctx = node.context;
++    if (ctx == null || !ctx.mounted) return false;
++    if (!node.ancestors.contains(_trapScope)) return true;
++    return _routeIsCurrent(ctx);
++  }
++
++  void _checkFocus() {
++    if (!mounted) return;
++    // Un selector u otro diálogo encima del panel tiene el foco: no tocar.
++    if (!_routeIsCurrent(context)) return;
++    final primary = FocusManager.instance.primaryFocus;
++    final lost = primary == null ||
++        primary.context == null ||
++        identical(primary, _trapScope) ||
++        (primary is FocusScopeNode && primary.ancestors.contains(_trapScope)) ||
++        (primary.ancestors.contains(_trapScope) && !_isUsableFocus(primary));
++    if (!lost) {
++      _focusRetries = 0;
++      return;
++    }
++    final target = _closestFocusable();
++    if (target != null) {
++      _focusRetries = 0;
++      target.requestFocus();
++      return;
++    }
++    // La página aún se está montando: se vuelve a mirar en el siguiente frame.
++    if (_focusRetries++ < 20) {
++      Future<void>.delayed(const Duration(milliseconds: 16), _scheduleFocusCheck);
++    }
++  }
++
++  FocusNode? _closestFocusable() {
++    final candidates = <FocusNode>[
++      for (final node in _trapScope.traversalDescendants)
++        if (node is! FocusScopeNode && _isUsableFocus(node)) node,
++    ];
++    if (candidates.isEmpty) return null;
++    final last = _lastFocusRect;
++    if (last == null) return candidates.first;
++    FocusNode best = candidates.first;
++    var bestDistance = double.infinity;
++    for (final node in candidates) {
++      final double distance;
++      try {
++        distance = (node.rect.center - last.center).distance;
++      } catch (_) {
++        continue;
++      }
++      if (distance < bestDistance) {
++        bestDistance = distance;
++        best = node;
++      }
++    }
++    return best;
++  }
++
+   void _handleBackDismiss() {
+     // An open TV keyboard owns back, so close it instead of popping the panel
+     // out from underneath it.
 diff --git a/lib/util/app_exit.dart b/lib/util/app_exit.dart
 index 607c9b2..6eca2ca 100644
 --- a/lib/util/app_exit.dart

@@ -345,7 +345,9 @@ PreferredSizeWidget _cineSettingsBar(
     backgroundColor: cineBg,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
-    automaticallyImplyLeading: onClose == null,
+    // En la tele se vuelve con el botón Atrás del mando: la flecha de la barra
+    // recibía el foco sin verse y parecía que el cursor desaparecía.
+    automaticallyImplyLeading: onClose == null && !PlatformDetection.isTV,
     leading: onClose != null && !PlatformDetection.isTV
         ? IconButton(onPressed: onClose, icon: const Icon(Icons.close))
         : null,
@@ -378,6 +380,8 @@ class _CinePage extends StatelessWidget {
       body: ListenableBuilder(
         listenable: prefs,
         builder: (context, _) => ListView(
+          // Todas las filas montadas: el mando nunca se queda sin destino.
+          cacheExtent: 4000,
           padding: const EdgeInsets.only(bottom: 56),
           children: builder(context, prefs),
         ),
@@ -411,6 +415,8 @@ class _CineSettingsHome extends StatelessWidget {
       body: ListenableBuilder(
         listenable: prefs,
         builder: (context, _) => ListView(
+          // Todas las filas montadas: el mando nunca se queda sin destino.
+          cacheExtent: 4000,
           padding: const EdgeInsets.only(bottom: 48),
           children: [
             _CineProfileHeader(onClose: onClose),
