@@ -173,9 +173,16 @@ jobs:
           LOG="$RUNNER_TEMP/tizen.log"
           : > "$LOG"
           # Si algo falla, el motivo sale como aviso en el resumen de la ejecución.
+          CLILOG="$HOME/tizen-studio-data/cli/logs/cli.log"
           fallo() {
             cat "$LOG"
-            MSG=$(tail -c 1800 "$LOG" | tr '\r\n' '  ' | sed 's/%/%25/g')
+            SRC="$LOG"
+            if [ -s "$CLILOG" ]; then
+              echo "----- cli.log -----"; tail -n 80 "$CLILOG"
+              grep -iE "error|exception|fail|caused" "$CLILOG" | tail -n 25 > "$RUNNER_TEMP/err.txt"
+              [ -s "$RUNNER_TEMP/err.txt" ] && SRC="$RUNNER_TEMP/err.txt"
+            fi
+            MSG=$(tail -c 2500 "$SRC" | tr '\r\n' '  ' | sed 's/%/%25/g')
             echo "::error title=Firma Tizen - $1::$MSG"
             exit 1
           }
@@ -195,6 +202,9 @@ jobs:
           printf '%s' "$TIZEN_DISTRIBUTOR_P12" | base64 --decode > "$RUNNER_TEMP/distributor.p12"
           "$TIZEN" security-profiles add -n cine -a "$RUNNER_TEMP/author.p12" -p "$TIZEN_AUTHOR_PASSWORD" \
             -d "$RUNNER_TEMP/distributor.p12" -dp "$TIZEN_DISTRIBUTOR_PASSWORD" >> "$LOG" 2>&1 || fallo "perfil de certificados"
+          "$TIZEN" cli-config "profiles.path=$HOME/tizen-studio-data/profile/profiles.xml" >> "$LOG" 2>&1 || fallo "configuración del CLI"
+          "$TIZEN" security-profiles list >> "$LOG" 2>&1 || true
+          : > "$LOG"
           "$TIZEN" package -t wgt -s cine -- "$PWD/tizen-pkg" >> "$LOG" 2>&1 || fallo "empaquetado"
           WGT=$(ls tizen-pkg/*.wgt 2>/dev/null | head -1)
           [ -n "$WGT" ] || fallo "no se generó el .wgt firmado"
