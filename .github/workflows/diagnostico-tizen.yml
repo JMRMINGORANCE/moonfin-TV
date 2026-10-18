@@ -1,0 +1,66 @@
+name: Diagnóstico Tizen
+
+# Reempaqueta el WGT de una release añadiendo el recuadro de diagnóstico y lo
+# firma. Se publica como prerelease "tizen-diagnostico" (no afecta a las
+# actualizaciones de la app, que solo miran la última release normal).
+on:
+  push:
+    branches: [diag-tizen]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BASE_TAG: v2.7.0.57
+    steps:
+      - uses: actions/checkout@v4
+      - name: Desempaquetar el WGT de la release
+        run: |
+          gh release download "$BASE_TAG" -R "$GITHUB_REPOSITORY" -p 'TaquitoFlix_Tizen_*.wgt' -O base.wgt
+          mkdir tizen-pkg && cd tizen-pkg && unzip -q ../base.wgt
+          rm -f author-signature.xml signature*.xml .manifest.tmp
+          cp ../tizen/diag/tizen-diag.js .
+          sed -i 's|<script src="tizen-compat.js"></script>|<script src="tizen-compat.js"></script>\n  <script src="tizen-diag.js"></script>|' index.html
+          grep -q tizen-diag.js index.html
+          mkdir -p ../out
+      - name: Firmar
+        env:
+          TIZEN_AUTHOR_P12: ${{ secrets.TIZEN_AUTHOR_P12_BASE64 }}
+          TIZEN_AUTHOR_PASSWORD: ${{ secrets.TIZEN_AUTHOR_PASSWORD }}
+          TIZEN_DISTRIBUTOR_P12: ${{ secrets.TIZEN_DISTRIBUTOR_P12_BASE64 }}
+          TIZEN_DISTRIBUTOR_PASSWORD: ${{ secrets.TIZEN_DISTRIBUTOR_PASSWORD }}
+        run: |
+          curl -fsSL -o tizen-cli.bin "https://download.tizen.org/sdk/Installer/tizen-studio_6.1/web-cli_Tizen_Studio_6.1_ubuntu-64.bin"
+          chmod +x tizen-cli.bin
+          ./tizen-cli.bin --accept-license "$HOME/tizen-studio" > /dev/null
+          TIZEN="$HOME/tizen-studio/tools/ide/bin/tizen"
+          printf '%s' "$TIZEN_AUTHOR_P12" | base64 --decode > "$RUNNER_TEMP/author.p12"
+          printf '%s' "$TIZEN_DISTRIBUTOR_P12" | base64 --decode > "$RUNNER_TEMP/distributor.p12"
+          "$TIZEN" security-profiles add -n cine -a "$RUNNER_TEMP/author.p12" -p "$TIZEN_AUTHOR_PASSWORD" \
+            -d "$RUNNER_TEMP/distributor.p12" -dp "$TIZEN_DISTRIBUTOR_PASSWORD"
+          "$TIZEN" cli-config "profiles.path=$HOME/tizen-studio-data/profile/profiles.xml"
+          python3 - "$HOME/tizen-studio-data/profile/profiles.xml" <<'PY'
+          import os, sys, xml.etree.ElementTree as ET
+          path = sys.argv[1]; tree = ET.parse(path)
+          for prof in tree.getroot().iter("profile"):
+              if prof.get("name") != "cine": continue
+              for item in prof.iter("profileitem"):
+                  if not item.get("key"): continue
+                  item.set("password", os.environ["TIZEN_AUTHOR_PASSWORD"] if item.get("distributor") == "0" else os.environ["TIZEN_DISTRIBUTOR_PASSWORD"])
+          tree.write(path, encoding="UTF-8", xml_declaration=True)
+          PY
+          "$TIZEN" package -t wgt -s cine -- "$PWD/tizen-pkg"
+          WGT=$(ls tizen-pkg/*.wgt | head -1)
+          unzip -l "$WGT" | grep -q signature1.xml
+          mv "$WGT" out/TaquitoFlix_Tizen_diagnostico.wgt
+      - name: Publicar como prerelease
+        run: |
+          gh release delete tizen-diagnostico -R "$GITHUB_REPOSITORY" -y --cleanup-tag || true
+          gh release create tizen-diagnostico -R "$GITHUB_REPOSITORY" --prerelease \
+            --title "Diagnóstico Tizen" --notes "Paquete de prueba con recuadro de diagnóstico. No instalar salvo para pruebas." \
+            out/TaquitoFlix_Tizen_diagnostico.wgt
