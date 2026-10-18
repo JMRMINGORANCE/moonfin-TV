@@ -640,6 +640,20 @@ Widget cineSectionTitle(
   );
 }
 
+/// Alineación para que, al enfocar una carátula, su parte de arriba quede a
+/// [focusTop] píxeles del borde superior de la pantalla (si se indica).
+double _cineRowAlignment(
+  BuildContext context,
+  double cardHeight,
+  double fallback,
+  double? focusTop,
+) {
+  if (focusTop == null) return fallback;
+  final free = MediaQuery.sizeOf(context).height - cardHeight;
+  if (free <= 0) return fallback;
+  return (focusTop / free).clamp(0.0, 1.0);
+}
+
 /// Fila horizontal de carátulas.
 class CineRow extends StatelessWidget {
   final String title;
@@ -652,6 +666,10 @@ class CineRow extends StatelessWidget {
   /// Dónde queda la fila al recibir el foco (0 arriba, 1 abajo).
   final double focusAlignment;
 
+  /// Si se indica, distancia desde arriba a la que queda la carátula enfocada
+  /// (deja sitio a la cabecera viva de la tele sin tapar el título de la fila).
+  final double? focusTop;
+
   const CineRow({
     super.key,
     required this.title,
@@ -661,6 +679,7 @@ class CineRow extends StatelessWidget {
     this.onNearEnd,
     this.onTileFocused,
     this.focusAlignment = 0.5,
+    this.focusTop,
   });
 
   @override
@@ -670,6 +689,12 @@ class CineRow extends StatelessWidget {
     final cardW = landscape ? posterW * 1.75 : posterW;
     final imageH = landscape ? cardW * 9 / 16 : posterW * 1.5;
     final rowH = imageH + (landscape ? 56 : 0) + 24;
+    final align = _cineRowAlignment(
+      context,
+      imageH + (landscape ? 56 : 0),
+      focusAlignment,
+      focusTop,
+    );
     final pad = cineSidePadding(context);
     final leftEdge = cineNavbarIsLeft ? cineFocusNavbar : null;
 
@@ -700,7 +725,7 @@ class CineRow extends StatelessWidget {
                   playOverlay: playOverlay,
                   onLeftEdge: index == 0 ? leftEdge : null,
                   onFocused: onTileFocused,
-                  scrollAlignment: focusAlignment,
+                  scrollAlignment: align,
                 ),
               );
             },
@@ -717,6 +742,7 @@ class CineTop10Row extends StatelessWidget {
   final List<CineTile> tiles;
   final ValueChanged<CineTile>? onTileFocused;
   final double focusAlignment;
+  final double? focusTop;
 
   const CineTop10Row({
     super.key,
@@ -724,6 +750,7 @@ class CineTop10Row extends StatelessWidget {
     required this.tiles,
     this.onTileFocused,
     this.focusAlignment = 0.5,
+    this.focusTop,
   });
 
   @override
@@ -731,6 +758,8 @@ class CineTop10Row extends StatelessWidget {
     if (tiles.isEmpty) return const SizedBox.shrink();
     final posterW = cinePosterWidth(context);
     final posterH = posterW * 1.5;
+    final align =
+        _cineRowAlignment(context, posterH, focusAlignment, focusTop);
     final numberW = posterW * 0.62;
     final pad = cineSidePadding(context);
     final leftEdge = cineNavbarIsLeft ? cineFocusNavbar : null;
@@ -779,7 +808,7 @@ class CineTop10Row extends StatelessWidget {
                       imageHeight: posterH,
                       onLeftEdge: index == 0 ? leftEdge : null,
                       onFocused: onTileFocused,
-                      scrollAlignment: focusAlignment,
+                      scrollAlignment: align,
                     ),
                   ],
                 ),

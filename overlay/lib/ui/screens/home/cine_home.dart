@@ -693,8 +693,12 @@ class _CineHomeState extends State<_CineHome> {
 
     final tv = cineIsTv;
     final tileFocused = tv ? _onTileFocused : null;
-    // En la tele la fila enfocada baja para dejar sitio a la cabecera viva.
+    // En la tele la fila enfocada baja para dejar sitio a la cabecera viva:
+    // la carátula queda justo debajo, con el título de la fila a la vista.
     final focusAlign = tv ? 0.82 : 0.5;
+    final focusTop = tv
+        ? MediaQuery.sizeOf(context).height * _kPreviewHeight + 58
+        : null;
     final hideStale = widget.prefs.get(cineHideStaleResume);
     final rowWidgets = <Widget>[];
 
@@ -717,6 +721,7 @@ class _CineHomeState extends State<_CineHome> {
           landscape: true,
           onTileFocused: tileFocused,
           focusAlignment: focusAlign,
+          focusTop: focusTop,
         ),
       );
     }
@@ -732,6 +737,7 @@ class _CineHomeState extends State<_CineHome> {
           tiles: [for (final it in _downloaded) _latestTile(it)],
           onTileFocused: tileFocused,
           focusAlignment: focusAlign,
+          focusTop: focusTop,
         ),
       );
     }
@@ -743,6 +749,7 @@ class _CineHomeState extends State<_CineHome> {
           tiles: [for (final it in _latest) _latestTile(it)],
           onTileFocused: tileFocused,
           focusAlignment: focusAlign,
+          focusTop: focusTop,
         ),
       );
     }
@@ -762,6 +769,7 @@ class _CineHomeState extends State<_CineHome> {
             tiles: [for (final it in top10) _tile(null, it, false)],
             onTileFocused: tileFocused,
             focusAlignment: focusAlign,
+            focusTop: focusTop,
           ),
         );
       }
@@ -801,6 +809,7 @@ class _CineHomeState extends State<_CineHome> {
           onNearEnd: () => widget.viewModel.loadMoreForRow(i),
           onTileFocused: tileFocused,
           focusAlignment: focusAlign,
+          focusTop: focusTop,
         ),
       );
     }
@@ -817,6 +826,7 @@ class _CineHomeState extends State<_CineHome> {
           tiles: [for (final it in c.items) _tile(null, it, false)],
           onTileFocused: tileFocused,
           focusAlignment: focusAlign,
+          focusTop: focusTop,
         ),
       );
     }
@@ -935,7 +945,7 @@ class _CineHomeState extends State<_CineHome> {
                   top: 0,
                   left: 0,
                   right: 0,
-                  height: h * 0.46,
+                  height: h * _kPreviewHeight,
                   child: IgnorePointer(
                     ignoring: !show,
                     child: AnimatedOpacity(
@@ -1031,6 +1041,9 @@ class _CineHomeState extends State<_CineHome> {
     ];
   }
 }
+
+/// Alto de la cabecera viva de la tele, en proporción a la pantalla.
+const double _kPreviewHeight = 0.46;
 
 /// Cabecera viva de la tele: aparece al bajar a las filas y enseña el título
 /// que tiene el foco, con su imagen, datos y sinopsis.
