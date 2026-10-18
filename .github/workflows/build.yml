@@ -153,7 +153,14 @@ jobs:
           # La app se carga desde el sistema de ficheros del televisor: rutas relativas.
           sed -i 's|<base href="/">|<base href="./">|' "$PKG/index.html"
           cp tizen/tizen-keys.js "$PKG/tizen-keys.js"
-          sed -i 's|<head>|<head>\n  <script src="tizen-keys.js"></script>|' "$PKG/index.html"
+          cp tizen/tizen-compat.js "$PKG/tizen-compat.js"
+          # Primero la compatibilidad (fetch de archivos locales y aviso de
+          # errores), luego el mando.
+          sed -i 's|<head>|<head>\n  <script src="tizen-compat.js"></script>\n  <script src="tizen-keys.js"></script>|' "$PKG/index.html"
+          # El navegador de la tele no entiende "inset": la pantalla de carga
+          # usa las cuatro esquinas.
+          sed -i 's|inset: 0;|top: 0; right: 0; bottom: 0; left: 0;|g' "$PKG/index.html"
+          grep -q 'tizen-compat.js' "$PKG/index.html"
           sed "s/__VERSION__/$VERSION/" tizen/config.xml > "$PKG/config.xml"
           cp src/web/icons/Icon-512.png "$PKG/icon.png"
           mkdir -p out
