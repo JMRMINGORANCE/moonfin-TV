@@ -27,6 +27,9 @@ jobs:
           cp ../tizen/diag/tizen-diag.js .
           sed -i 's|<script src="tizen-compat.js"></script>|<script src="tizen-compat.js"></script>\n  <script src="tizen-diag.js"></script>|' index.html
           grep -q tizen-diag.js index.html
+          # Prueba: ancho de página fijo de 1920 (lo que pide Samsung para la tele).
+          sed -i 's|<meta name="viewport"[^>]*>|<meta name="viewport" content="width=1920, user-scalable=no">|' index.html
+          grep -q 'content="width=1920' index.html
           mkdir -p ../out
       - name: Firmar
         env:

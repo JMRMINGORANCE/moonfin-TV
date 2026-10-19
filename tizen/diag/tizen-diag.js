@@ -17,9 +17,12 @@
     if (!b) {
       b = document.createElement('pre');
       b.id = 'taquito-diag';
-      b.setAttribute('style', 'position:fixed;top:10px;left:10px;width:900px;margin:0;padding:14px;' +
-        'background:rgba(0,0,0,0.85);color:#7CFC00;font:18px/1.35 monospace;white-space:pre-wrap;' +
-        'z-index:2147483647;pointer-events:none;border:2px solid #7CFC00');
+      // En el centro y pequeño: si la página se ve ampliada, el centro es lo
+      // único que queda a la vista.
+      b.setAttribute('style', 'position:fixed;top:50%;left:50%;width:300px;margin:0;padding:6px;' +
+        'transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);' +
+        'background:rgba(0,0,0,0.92);color:#7CFC00;font:9px/1.3 monospace;white-space:pre-wrap;' +
+        'word-break:break-all;z-index:2147483647;pointer-events:none;border:1px solid #7CFC00');
       (document.body || document.documentElement).appendChild(b);
     }
     return b;
@@ -37,7 +40,7 @@
     var cs = [];
     for (var i = 0; i < canvases.length && i < 3; i++) cs.push(size(canvases[i]));
     box().textContent =
-      'DIAGNOSTICO TaquitoFlix  t=' + Math.round((Date.now() - t0) / 1000) + 's\n' +
+      'DIAG v2  t=' + Math.round((Date.now() - t0) / 1000) + 's\n' +
       'primer frame: ' + (first === null ? 'NO' : first + ' ms') + '\n' +
       'innerWidth x innerHeight: ' + window.innerWidth + 'x' + window.innerHeight + '\n' +
       'outer: ' + window.outerWidth + 'x' + window.outerHeight + '  screen: ' + screen.width + 'x' + screen.height + '\n' +
