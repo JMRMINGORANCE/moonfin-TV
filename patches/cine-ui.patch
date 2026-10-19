@@ -1,5 +1,5 @@
 diff --git a/android/app/build.gradle.kts b/android/app/build.gradle.kts
-index ee78647..d13c31b 100644
+index ee78647c..d13c31b8 100644
 --- a/android/app/build.gradle.kts
 +++ b/android/app/build.gradle.kts
 @@ -35,7 +35,7 @@ plugins {
@@ -23,7 +23,7 @@ index ee78647..d13c31b 100644
          // environment so an unset build is byte-identical to before:
          //   MOONFIN_TEST_ID_SUFFIX=.hwtest flutter build apk --flavor androidTv --debug
 diff --git a/android/app/src/main/AndroidManifest.xml b/android/app/src/main/AndroidManifest.xml
-index 2c1436f..1388505 100644
+index 2c1436fb..13885055 100644
 --- a/android/app/src/main/AndroidManifest.xml
 +++ b/android/app/src/main/AndroidManifest.xml
 @@ -1,5 +1,7 @@
@@ -47,7 +47,7 @@ index 2c1436f..1388505 100644
              android:name="org.moonfin.androidtv.MoonfinArtProvider"
              android:authorities="${applicationId}.artwork"
 diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
-index d7552fc..f94ea4e 100644
+index d7552fcb..f94ea4eb 100644
 --- a/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
 +++ b/android/app/src/main/kotlin/org/moonfin/androidtv/DlnaController.kt
 @@ -183,7 +183,7 @@ class DlnaController(private val context: Context) {
@@ -60,7 +60,7 @@ index d7552fc..f94ea4e 100644
  
          if (targetId.isNullOrEmpty() || streamUrl.isNullOrEmpty()) {
 diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
-index 2e6f8bf..636b77a 100644
+index 2e6f8bf6..636b77a5 100644
 --- a/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
 +++ b/android/app/src/main/kotlin/org/moonfin/androidtv/MainActivity.kt
 @@ -391,6 +391,11 @@ class MainActivity : AudioServiceActivity(), GamepadsCompatibleActivity {
@@ -103,7 +103,7 @@ index 2e6f8bf..636b77a 100644
              posterUrl = posterUrl,
          )
 diff --git a/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt b/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt
-index a37db9d..73e7d17 100644
+index a37db9da..73e7d17b 100644
 --- a/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt
 +++ b/android/app/src/main/kotlin/org/moonfin/androidtv/MediaStoreHelper.kt
 @@ -13,7 +13,7 @@ class MediaStoreHelper(private val context: Context) : MethodChannel.MethodCallH
@@ -116,7 +116,7 @@ index a37db9d..73e7d17 100644
  
      override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
 diff --git a/lib/data/services/app_update_service.dart b/lib/data/services/app_update_service.dart
-index fdaa6db..cea1151 100644
+index fdaa6dba..cea1151f 100644
 --- a/lib/data/services/app_update_service.dart
 +++ b/lib/data/services/app_update_service.dart
 @@ -47,8 +47,9 @@ class AppUpdateService {
@@ -141,7 +141,7 @@ index fdaa6db..cea1151 100644
        final assetsJson = decoded['assets'];
        final assets = <_ReleaseAsset>[];
 diff --git a/lib/data/services/media_store_service.dart b/lib/data/services/media_store_service.dart
-index 5cce0e8..b87aa57 100644
+index 5cce0e87..b87aa57d 100644
 --- a/lib/data/services/media_store_service.dart
 +++ b/lib/data/services/media_store_service.dart
 @@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
@@ -154,7 +154,7 @@ index 5cce0e8..b87aa57 100644
      final path = await _channel.invokeMethod<String>('getMediaStorePath');
      return path!;
 diff --git a/lib/data/viewmodels/library_browse_view_model.dart b/lib/data/viewmodels/library_browse_view_model.dart
-index b213b7e..2eed1e8 100644
+index b213b7ef..2eed1e86 100644
 --- a/lib/data/viewmodels/library_browse_view_model.dart
 +++ b/lib/data/viewmodels/library_browse_view_model.dart
 @@ -422,8 +422,10 @@ class LibraryBrowseViewModel extends ChangeNotifier {
@@ -171,7 +171,7 @@ index b213b7e..2eed1e8 100644
      _likedFilter = _prefs.get(UserPreferences.libraryLikedFilter(_prefKey));
      _seriesFilter = _prefs.get(UserPreferences.librarySeriesFilter(_prefKey));
 diff --git a/lib/platform/web_runtime_config_model.dart b/lib/platform/web_runtime_config_model.dart
-index d424c89..f8f994b 100644
+index d424c89e..f8f994b0 100644
 --- a/lib/platform/web_runtime_config_model.dart
 +++ b/lib/platform/web_runtime_config_model.dart
 @@ -22,7 +22,7 @@ class WebRuntimeConfig {
@@ -184,7 +184,7 @@ index d424c89..f8f994b 100644
      forcedServerUrl: null,
    );
 diff --git a/lib/preference/bottom_nav_tabs.dart b/lib/preference/bottom_nav_tabs.dart
-index 1b3cbfb..79c293d 100644
+index 1b3cbfb0..79c293d2 100644
 --- a/lib/preference/bottom_nav_tabs.dart
 +++ b/lib/preference/bottom_nav_tabs.dart
 @@ -9,11 +9,11 @@ const int kMaxPinnedBottomNavTabs = 3;
@@ -202,7 +202,7 @@ index 1b3cbfb..79c293d 100644
    BottomNavTab.folders,
  ];
 diff --git a/lib/preference/home_section_config.dart b/lib/preference/home_section_config.dart
-index 4bf2592..a2e6be4 100644
+index 4bf25927..a2e6be41 100644
 --- a/lib/preference/home_section_config.dart
 +++ b/lib/preference/home_section_config.dart
 @@ -358,17 +358,17 @@ class HomeSectionConfig {
@@ -227,10 +227,10 @@ index 4bf2592..a2e6be4 100644
      ),
      HomeSectionConfig(
 diff --git a/lib/preference/user_preferences.dart b/lib/preference/user_preferences.dart
-index feaf485..6c4d2c1 100644
+index 3fe72fc1..fab17059 100644
 --- a/lib/preference/user_preferences.dart
 +++ b/lib/preference/user_preferences.dart
-@@ -837,7 +837,11 @@ class UserPreferences extends ChangeNotifier {
+@@ -839,7 +839,11 @@ class UserPreferences extends ChangeNotifier {
  
    /// Whether a media bar trailer may play here. A device on the reduced tier
    /// keeps the still image, because the decoder is what takes it down.
@@ -243,7 +243,7 @@ index feaf485..6c4d2c1 100644
      userEnabled: get(mediaBarTrailerPreview),
      tier: resolveDevicePerformanceTier(),
    );
-@@ -1293,17 +1297,17 @@ class UserPreferences extends ChangeNotifier {
+@@ -1295,17 +1299,17 @@ class UserPreferences extends ChangeNotifier {
  
    static final sinceYouWatched1Enabled = Preference(
      key: 'since_you_watched_1_enabled',
@@ -264,7 +264,7 @@ index feaf485..6c4d2c1 100644
    );
  
    static final sinceYouWatched4Enabled = Preference(
-@@ -1625,7 +1629,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -1627,7 +1631,7 @@ class UserPreferences extends ChangeNotifier {
    /// because it syncs to that server's profile.
    static final detailScreenStyle = EnumPreference(
      key: 'pref_detail_screen_style',
@@ -273,7 +273,7 @@ index feaf485..6c4d2c1 100644
      values: DetailScreenStyle.values,
    );
  
-@@ -1856,7 +1860,12 @@ class UserPreferences extends ChangeNotifier {
+@@ -1864,7 +1868,12 @@ class UserPreferences extends ChangeNotifier {
  
    static final navbarPosition = EnumPreference(
      key: 'pref_navbar_position',
@@ -287,7 +287,7 @@ index feaf485..6c4d2c1 100644
      values: NavbarPosition.values,
    );
  
-@@ -1864,7 +1873,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -1872,7 +1881,7 @@ class UserPreferences extends ChangeNotifier {
    // so they land on Dock. That's the whole migration.
    static final bottomNavbarStyle = EnumPreference(
      key: 'pref_bottom_navbar_style',
@@ -296,7 +296,7 @@ index feaf485..6c4d2c1 100644
      values: BottomNavbarStyle.values,
    );
  
-@@ -2376,12 +2385,12 @@ class UserPreferences extends ChangeNotifier {
+@@ -2398,12 +2407,12 @@ class UserPreferences extends ChangeNotifier {
  
    static final languageOverride = Preference<String>(
      key: 'pref_language_override',
@@ -311,7 +311,7 @@ index feaf485..6c4d2c1 100644
    );
    static final fallbackAudioLanguage = Preference<String>(
      key: 'pref_fallback_audio_language',
-@@ -2489,7 +2498,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2511,7 +2520,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final subtitleMode = EnumPreference(
      key: 'pref_subtitle_mode',
@@ -320,7 +320,7 @@ index feaf485..6c4d2c1 100644
      values: SubtitleMode.values,
    );
  
-@@ -2555,7 +2564,9 @@ class UserPreferences extends ChangeNotifier {
+@@ -2577,7 +2586,9 @@ class UserPreferences extends ChangeNotifier {
  
    static final replaceSkipOutroWithNextUp = Preference(
      key: 'replace_skip_outro_with_next_up',
@@ -331,7 +331,7 @@ index feaf485..6c4d2c1 100644
    );
  
    static final skipBackLength = Preference(
-@@ -2572,7 +2583,8 @@ class UserPreferences extends ChangeNotifier {
+@@ -2594,7 +2605,8 @@ class UserPreferences extends ChangeNotifier {
  
    static final skipForwardLength = Preference(
      key: 'skipForwardLength',
@@ -341,7 +341,7 @@ index feaf485..6c4d2c1 100644
    );
  
    static final unpauseRewindDuration = Preference(
-@@ -2630,15 +2642,18 @@ class UserPreferences extends ChangeNotifier {
+@@ -2652,15 +2664,18 @@ class UserPreferences extends ChangeNotifier {
    );
    static final osdButtonOrderTv = Preference(
      key: 'osdButtonOrderTv',
@@ -363,7 +363,7 @@ index feaf485..6c4d2c1 100644
    );
    static final hiddenDetailButtonsTv = Preference(
      key: 'hiddenDetailButtonsTv',
-@@ -2694,15 +2709,18 @@ class UserPreferences extends ChangeNotifier {
+@@ -2716,15 +2731,18 @@ class UserPreferences extends ChangeNotifier {
    );
    static final hiddenOsdButtonsTv = Preference(
      key: 'hiddenOsdButtonsTv',
@@ -385,7 +385,7 @@ index feaf485..6c4d2c1 100644
    );
    static final mediaBarEnabled = Preference(
      key: 'mediaBarEnabled',
-@@ -2711,9 +2729,8 @@ class UserPreferences extends ChangeNotifier {
+@@ -2733,9 +2751,8 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarMode = Preference(
      key: 'mediaBarMode',
@@ -397,7 +397,7 @@ index feaf485..6c4d2c1 100644
    );
  
    static final mediaBarContentType = Preference(
-@@ -2723,7 +2740,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2745,7 +2762,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final mediaBarSourceType = Preference(
      key: 'mediaBarSourceType',
@@ -406,7 +406,7 @@ index feaf485..6c4d2c1 100644
    );
  
    static final mediaBarItemCount = Preference(
-@@ -2738,7 +2755,7 @@ class UserPreferences extends ChangeNotifier {
+@@ -2760,7 +2777,7 @@ class UserPreferences extends ChangeNotifier {
  
    static final navbarColor = Preference(
      key: 'navbarColor',
@@ -415,7 +415,7 @@ index feaf485..6c4d2c1 100644
    );
  
    static final mediaBarOverlayOpacity = Preference(
-@@ -3395,14 +3412,14 @@ class UserPreferences extends ChangeNotifier {
+@@ -3417,14 +3434,14 @@ class UserPreferences extends ChangeNotifier {
    static EnumPreference<LibrarySortBy> librarySortBy(String libraryId) =>
        EnumPreference(
          key: 'library_sort_by_$libraryId',
@@ -433,7 +433,7 @@ index feaf485..6c4d2c1 100644
        );
  
 diff --git a/lib/ui/navigation/app_router.dart b/lib/ui/navigation/app_router.dart
-index 78b882b..5648978 100644
+index 1fcfddd0..7981e504 100644
 --- a/lib/ui/navigation/app_router.dart
 +++ b/lib/ui/navigation/app_router.dart
 @@ -29,6 +29,10 @@ import '../screens/browse/collection_screen.dart';
@@ -502,7 +502,7 @@ index 78b882b..5648978 100644
      GoRoute(
        path: Destinations.seerrRequests,
 diff --git a/lib/ui/screens/auth/server_screen.dart b/lib/ui/screens/auth/server_screen.dart
-index 92d6ffb..0d48705 100644
+index 92d6ffbd..0d487057 100644
 --- a/lib/ui/screens/auth/server_screen.dart
 +++ b/lib/ui/screens/auth/server_screen.dart
 @@ -1,4 +1,5 @@
@@ -595,7 +595,7 @@ index 92d6ffb..0d48705 100644
    void dispose() {
      _scrollController.dispose();
 diff --git a/lib/ui/screens/auth/server_select_screen.dart b/lib/ui/screens/auth/server_select_screen.dart
-index 3c478a5..f65b557 100644
+index ec49e003..802591ec 100644
 --- a/lib/ui/screens/auth/server_select_screen.dart
 +++ b/lib/ui/screens/auth/server_select_screen.dart
 @@ -33,6 +33,7 @@ import '../../widgets/client_certificate_dialog.dart';
@@ -662,7 +662,7 @@ index 3c478a5..f65b557 100644
          accessToken: credentials.accessToken,
          lastUsed: DateTime.now(),
 diff --git a/lib/ui/screens/auth/startup_screen.dart b/lib/ui/screens/auth/startup_screen.dart
-index 4510b71..d91aac7 100644
+index 4510b710..d91aac74 100644
 --- a/lib/ui/screens/auth/startup_screen.dart
 +++ b/lib/ui/screens/auth/startup_screen.dart
 @@ -7,6 +7,7 @@ import 'package:jellyfin_preference/jellyfin_preference.dart';
@@ -734,7 +734,7 @@ index 4510b71..d91aac7 100644
        AppColorScheme.background,
        AppColorScheme.surfaceVariant,
 diff --git a/lib/ui/screens/detail/item_detail_screen.dart b/lib/ui/screens/detail/item_detail_screen.dart
-index bde3b12..00ef6c0 100644
+index 81410760..ae29c386 100644
 --- a/lib/ui/screens/detail/item_detail_screen.dart
 +++ b/lib/ui/screens/detail/item_detail_screen.dart
 @@ -47,6 +47,8 @@ import '../../../preference/detail_section_layout.dart';
@@ -768,7 +768,7 @@ index bde3b12..00ef6c0 100644
        ItemDetailState.ready => switch (_prefs.effectiveDetailScreenStyle) {
          DetailScreenStyle.classic => _DetailContent(
            viewModel: _viewModel,
-@@ -7127,7 +7144,8 @@ class DetailActionButtonsState extends State<DetailActionButtons> {
+@@ -7152,7 +7169,8 @@ class DetailActionButtonsState extends State<DetailActionButtons> {
            isActive: onWatchlist,
            activeColor: AppColorScheme.accent,
          ),
@@ -778,7 +778,7 @@ index bde3b12..00ef6c0 100644
            seerr.canReportIssue &&
            shows(DetailButton.seerrReportIssue))
          DetailButton.seerrReportIssue: _DetailActionButton(
-@@ -7142,7 +7160,8 @@ class DetailActionButtonsState extends State<DetailActionButtons> {
+@@ -7167,7 +7185,8 @@ class DetailActionButtonsState extends State<DetailActionButtons> {
              initialEpisode: item.type == 'Episode' ? item.indexNumber : null,
            ),
          ),
@@ -788,7 +788,7 @@ index bde3b12..00ef6c0 100644
            seerr.canManageRequests &&
            seerrPendingRequests(seerr.state).isNotEmpty &&
            shows(DetailButton.seerrManage))
-@@ -14080,9 +14099,17 @@ Widget? _seerrRequestButton(
+@@ -14209,9 +14228,17 @@ Widget? _seerrRequestButton(
      hasUnrequestedSeasons: hasUnrequestedSeasons,
    );
    if (action.kind != SeerrRequestActionKind.request) return null;
@@ -809,7 +809,7 @@ index bde3b12..00ef6c0 100644
      focusNode: focusNode,
      autofocus: autofocus,
 diff --git a/lib/ui/screens/home/home_screen.dart b/lib/ui/screens/home/home_screen.dart
-index 4f859ab..d49f8c6 100644
+index 4f859ab5..d49f8c6c 100644
 --- a/lib/ui/screens/home/home_screen.dart
 +++ b/lib/ui/screens/home/home_screen.dart
 @@ -88,6 +88,12 @@ import 'home_view_model.dart';
@@ -841,7 +841,7 @@ index 4f859ab..d49f8c6 100644
              onReturn: () => _contentRowsKey.currentState?.returnToTop(),
              child: Stack(
 diff --git a/lib/ui/screens/settings/home_row_toggles_screen.dart b/lib/ui/screens/settings/home_row_toggles_screen.dart
-index 082c0c6..62806fe 100644
+index 082c0c67..62806fe4 100644
 --- a/lib/ui/screens/settings/home_row_toggles_screen.dart
 +++ b/lib/ui/screens/settings/home_row_toggles_screen.dart
 @@ -623,7 +623,7 @@ class _HomeRowTogglesScreenState extends State<HomeRowTogglesScreen> {
@@ -854,7 +854,7 @@ index 082c0c6..62806fe 100644
                        values: SinceYouWatchedSource.values,
                        labelOf: (v) => v.displayName,
 diff --git a/lib/ui/screens/settings/panel/about_category_screen.dart b/lib/ui/screens/settings/panel/about_category_screen.dart
-index 1f0d8c6..5a53604 100644
+index 1f0d8c6a..5a53604c 100644
 --- a/lib/ui/screens/settings/panel/about_category_screen.dart
 +++ b/lib/ui/screens/settings/panel/about_category_screen.dart
 @@ -43,7 +43,7 @@ class _AboutCategoryScreen extends StatelessWidget {
@@ -876,7 +876,7 @@ index 1f0d8c6..5a53604 100644
                  ),
                ),
 diff --git a/lib/ui/screens/settings/settings_side_panel.dart b/lib/ui/screens/settings/settings_side_panel.dart
-index b4bf2fa..9a2dbea 100644
+index b4bf2fae..9a2dbeaf 100644
 --- a/lib/ui/screens/settings/settings_side_panel.dart
 +++ b/lib/ui/screens/settings/settings_side_panel.dart
 @@ -113,6 +113,17 @@ import '../../../preference/detail_section_layout.dart';
@@ -963,7 +963,7 @@ index b4bf2fa..9a2dbea 100644
              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
              child: _SettingsSearchField(
 diff --git a/lib/ui/screensaver/screensaver_view.dart b/lib/ui/screensaver/screensaver_view.dart
-index 66ed874..45a7b8d 100644
+index 66ed874e..45a7b8d7 100644
 --- a/lib/ui/screensaver/screensaver_view.dart
 +++ b/lib/ui/screensaver/screensaver_view.dart
 @@ -10,6 +10,8 @@ import '../../util/clock_format.dart';
@@ -997,7 +997,7 @@ index 66ed874..45a7b8d 100644
      final dim = _prefs.get(UserPreferences.screensaverDimming).clamp(0, 90);
      final component = _prefs.get(UserPreferences.screensaverComponent);
 diff --git a/lib/ui/theme/app_theme_controller.dart b/lib/ui/theme/app_theme_controller.dart
-index ae3e265..ee709bb 100644
+index ae3e265f..ee709bba 100644
 --- a/lib/ui/theme/app_theme_controller.dart
 +++ b/lib/ui/theme/app_theme_controller.dart
 @@ -52,7 +52,7 @@ class AppThemeController extends ChangeNotifier {
@@ -1010,7 +1010,7 @@ index ae3e265..ee709bb 100644
        VisualThemeId.glass => AppTheme.white,
        VisualThemeId.eightbitHero => AppTheme.eightBitGold,
 diff --git a/lib/ui/widgets/app_update_banner.dart b/lib/ui/widgets/app_update_banner.dart
-index b017b6b..e1f8ebe 100644
+index b017b6b7..e1f8ebe7 100644
 --- a/lib/ui/widgets/app_update_banner.dart
 +++ b/lib/ui/widgets/app_update_banner.dart
 @@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
@@ -1031,7 +1031,7 @@ index b017b6b..e1f8ebe 100644
        _entrance.forward();
        _autoDismissTimer = Timer(_autoDismissDuration, _dismiss);
 diff --git a/lib/ui/widgets/left_sidebar.dart b/lib/ui/widgets/left_sidebar.dart
-index bf043e3..dae1a2a 100644
+index bf043e30..dae1a2ac 100644
 --- a/lib/ui/widgets/left_sidebar.dart
 +++ b/lib/ui/widgets/left_sidebar.dart
 @@ -52,6 +52,7 @@ import '../navigation/app_router.dart';
@@ -1211,7 +1211,7 @@ index bf043e3..dae1a2a 100644
                          : const SizedBox.shrink(),
                    ),
 diff --git a/lib/ui/widgets/navigation_layout.dart b/lib/ui/widgets/navigation_layout.dart
-index 9698869..dd5c13f 100644
+index 96988696..dd5c13f4 100644
 --- a/lib/ui/widgets/navigation_layout.dart
 +++ b/lib/ui/widgets/navigation_layout.dart
 @@ -16,6 +16,7 @@ import 'package:moonfin_design/moonfin_design.dart';
@@ -1307,7 +1307,7 @@ index 9698869..dd5c13f 100644
      final overlayColor = OverlayColorPalette.resolveColor(
        _prefs.get(UserPreferences.navbarColor),
 diff --git a/lib/ui/widgets/playback/loading_animation_widget.dart b/lib/ui/widgets/playback/loading_animation_widget.dart
-index 7f493ad..f375e1a 100644
+index 7f493adb..f375e1a8 100644
 --- a/lib/ui/widgets/playback/loading_animation_widget.dart
 +++ b/lib/ui/widgets/playback/loading_animation_widget.dart
 @@ -1,3 +1,5 @@
@@ -1328,7 +1328,7 @@ index 7f493ad..f375e1a 100644
        LoadingAnimationImage.none => const SizedBox.shrink(),
        LoadingAnimationImage.moonfinLogo => MoonfinLogoAnimation(
 diff --git a/lib/ui/widgets/playback/next_up_overlay.dart b/lib/ui/widgets/playback/next_up_overlay.dart
-index 72c9768..bb8b230 100644
+index 72c97680..bb8b230e 100644
 --- a/lib/ui/widgets/playback/next_up_overlay.dart
 +++ b/lib/ui/widgets/playback/next_up_overlay.dart
 @@ -13,6 +13,8 @@ import '../../../preference/preference_constants.dart';
@@ -1362,7 +1362,7 @@ index 72c9768..bb8b230 100644
      final item = widget.nextItem;
      final tvFocusMode =
 diff --git a/lib/ui/widgets/settings/settings_panel.dart b/lib/ui/widgets/settings/settings_panel.dart
-index 8d7aa34..7147b6d 100644
+index 8d7aa34e..7147b6d4 100644
 --- a/lib/ui/widgets/settings/settings_panel.dart
 +++ b/lib/ui/widgets/settings/settings_panel.dart
 @@ -9,6 +9,7 @@ import '../../../l10n/app_localizations.dart';
@@ -1491,7 +1491,7 @@ index 8d7aa34..7147b6d 100644
      // An open TV keyboard owns back, so close it instead of popping the panel
      // out from underneath it.
 diff --git a/lib/util/app_exit.dart b/lib/util/app_exit.dart
-index 607c9b2..6eca2ca 100644
+index 607c9b28..6eca2ca0 100644
 --- a/lib/util/app_exit.dart
 +++ b/lib/util/app_exit.dart
 @@ -5,6 +5,7 @@ import 'package:window_manager/window_manager.dart';
@@ -1514,7 +1514,7 @@ index 607c9b2..6eca2ca 100644
    }
  }
 diff --git a/lib/util/overlay_color_palette.dart b/lib/util/overlay_color_palette.dart
-index 8376c94..0c46ad4 100644
+index 8376c940..0c46ad4b 100644
 --- a/lib/util/overlay_color_palette.dart
 +++ b/lib/util/overlay_color_palette.dart
 @@ -102,7 +102,7 @@ abstract final class OverlayColorPalette {
@@ -1527,7 +1527,7 @@ index 8376c94..0c46ad4 100644
        _ => normalizeKey(key),
      };
 diff --git a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart b/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
-index 1006910..549abdd 100644
+index 10069109..549abdd3 100644
 --- a/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
 +++ b/packages/design/lib/src/theme/themes/moonfin_theme_spec.dart
 @@ -5,45 +5,45 @@ import '../theme_spec.dart';
@@ -1595,7 +1595,7 @@ index 1006910..549abdd 100644
    ),
  );
 diff --git a/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt b/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt
-index 872c794..175641b 100644
+index 872c794a..175641b0 100644
 --- a/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt
 +++ b/packages/moonfin_native_video/android/src/main/kotlin/org/moonfin/nativevideo/Media3VideoView.kt
 @@ -4843,6 +4843,15 @@ class Media3VideoView(
@@ -1615,7 +1615,7 @@ index 872c794..175641b 100644
          }
  
 diff --git a/web/config.json b/web/config.json
-index cb69bb5..9e617d4 100644
+index cb69bb5f..9e617d4c 100644
 --- a/web/config.json
 +++ b/web/config.json
 @@ -1,9 +1,9 @@
@@ -1631,7 +1631,7 @@ index cb69bb5..9e617d4 100644
    "forcedServerUrl": null
  }
 diff --git a/web/index.html b/web/index.html
-index 81f2cd0..9fe985d 100644
+index 81f2cd02..9fe985dd 100644
 --- a/web/index.html
 +++ b/web/index.html
 @@ -6,17 +6,17 @@
@@ -1670,7 +1670,7 @@ index 81f2cd0..9fe985d 100644
    </div>
    <script src="flutter_bootstrap.js" async></script>
 diff --git a/web/manifest.json b/web/manifest.json
-index a117ef9..6711c54 100644
+index a117ef9a..6711c54e 100644
 --- a/web/manifest.json
 +++ b/web/manifest.json
 @@ -1,12 +1,12 @@
