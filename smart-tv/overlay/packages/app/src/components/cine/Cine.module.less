@@ -197,6 +197,10 @@
 }
 
 .seerrBadge {
+	white-space: nowrap;
+	max-width: calc(100% - 16px);
+	overflow: hidden;
+	text-overflow: ellipsis;
 	position: absolute;
 	left: 8px;
 	top: 8px;
@@ -461,4 +465,80 @@
 		opacity: 1;
 		transform: translateY(0);
 	}
+}
+
+.episode {
+	width: 440px;
+
+	.art {
+		height: 248px;
+	}
+}
+
+.captionOverview {
+	margin-top: 6px;
+	font-size: 20px;
+	line-height: 1.35;
+	color: #8c8c8c;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.person {
+	width: 190px;
+	text-align: center;
+
+	.art {
+		width: 190px;
+		height: 190px;
+		border-radius: 50%;
+	}
+
+	.artFallback {
+		font-size: 22px;
+	}
+
+	&:focus .art {
+		box-shadow: 0 0 0 4px #ffffff;
+	}
+}
+
+// Fila de temporadas de la ficha.
+.chips {
+	display: flex;
+	flex-wrap: nowrap;
+	padding: 6px 0 22px 6px;
+
+	> * {
+		margin-right: 18px;
+	}
+}
+
+.chip {
+	height: 60px;
+	padding: 0 30px;
+	display: flex;
+	align-items: center;
+	border-radius: 30px;
+	background: rgba(255, 255, 255, 0.12);
+	color: #d2d2d2;
+	font-size: 26px;
+	font-weight: 700;
+	white-space: nowrap;
+	outline: none;
+	cursor: pointer;
+	transition: transform 0.15s;
+
+	&:focus {
+		background: #ffffff;
+		color: #000000;
+		transform: scale(1.06);
+	}
+}
+
+.chipActive {
+	background: @red;
+	color: #ffffff;
 }

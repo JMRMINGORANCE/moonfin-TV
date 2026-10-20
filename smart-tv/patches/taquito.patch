@@ -1,8 +1,8 @@
 diff --git a/packages/app/src/App/App.js b/packages/app/src/App/App.js
-index 8091430..fc98d51 100644
+index 8091430..8df0d9b 100644
 --- a/packages/app/src/App/App.js
 +++ b/packages/app/src/App/App.js
-@@ -70,7 +70,7 @@ import {buildThemeCssVars, toRgbTriplet} from '../theme/themeSpec';
+@@ -70,11 +70,11 @@ import {buildThemeCssVars, toRgbTriplet} from '../theme/themeSpec';
  import {applyThemeOverrides} from '../theme/themeOverrides';
  import {resolveOverlayColor} from '../theme/overlayColors';
  import Login from '../views/Login';
@@ -10,7 +10,22 @@ index 8091430..fc98d51 100644
 +import CineHome from '../views/CineHome';
  import {isGameLibrary, refreshGameLibraries, resolveGameLibraryId} from '../utils/gameLibrary';
  
- const Details = lazy(() => import('../views/Details'));
+-const Details = lazy(() => import('../views/Details'));
+-const Library = lazy(() => import('../views/Library'));
++const Details = lazy(() => import('../views/CineDetails'));
++const Library = lazy(() => import('../views/CineLibrary'));
+ const Search = lazy(() => import('../views/Search'));
+ const Settings = lazy(() => import('../views/Settings'));
+ const Player = lazy(() => import('../views/Player'));
+@@ -84,7 +84,7 @@ const GenreBrowse = lazy(() => import('../views/GenreBrowse'));
+ const Person = lazy(() => import('../views/Person'));
+ const LiveTV = lazy(() => import('../views/LiveTV'));
+ const Recordings = lazy(() => import('../views/Recordings'));
+-const SeerrDiscover = lazy(() => import('../views/SeerrDiscover'));
++const SeerrDiscover = lazy(() => import('../views/CineSeerr'));
+ const SeerrRequests = lazy(() => import('../views/SeerrRequests'));
+ const SeerrBrowse = lazy(() => import('../views/SeerrBrowse'));
+ const SeerrPerson = lazy(() => import('../views/SeerrPerson'));
 @@ -405,7 +405,8 @@ const AppContent = (props) => {
  		(async () => {
  			const activeServer = await getActiveServer().catch(() => null);
@@ -65,7 +80,7 @@ index 2321bde..2df3e32 100644
 +	box-shadow: 160px 0 220px 80px rgba(0, 0, 0, 0.88);
 +}
 diff --git a/packages/app/src/context/defaultSettings.js b/packages/app/src/context/defaultSettings.js
-index 3d452b8..10bcc5d 100644
+index 3d452b8..6ccf120 100644
 --- a/packages/app/src/context/defaultSettings.js
 +++ b/packages/app/src/context/defaultSettings.js
 @@ -9,7 +9,7 @@ export const defaultSettings = {
@@ -77,6 +92,15 @@ index 3d452b8..10bcc5d 100644
  	subtitleMode: 'default',
  	subtitleSize: 'medium',
  	subtitlePosition: 'bottom',
+@@ -150,7 +150,7 @@ export const defaultSettings = {
+ 	mediaBarLibraryIds: [],
+ 	mediaBarCollectionIds: [],
+ 	unifiedLibraryMode: false,
+-	useMoonfinPlugin: false,
++	useMoonfinPlugin: true,
+ 	// The plugin profile this device syncs with. Empty follows the TV profile. It's a choice
+ 	// about this device rather than the account, so it never syncs.
+ 	syncProfile: '',
 @@ -200,7 +200,7 @@ export const defaultSettings = {
  	serverSortBy: 'name',
  	exitConfirmation: true,
@@ -163,6 +187,19 @@ index a848080..4e5c624 100644
  		focusGlow: []
  	}
  });
+diff --git a/packages/app/src/views/Library/Library.js b/packages/app/src/views/Library/Library.js
+index 3673d71..ef42122 100644
+--- a/packages/app/src/views/Library/Library.js
++++ b/packages/app/src/views/Library/Library.js
+@@ -265,7 +265,7 @@ const Library = ({library, genreFilter, studioFilter, onSelectItem, onViewPhoto,
+ 	const [gridDirection, setGridDirection] = useStorage(`library_gridDirection_${libraryId}`, 'vertical');
+ 	const [storedGroupBy, setGroupBy] = useStorage(`library_groupBy_${libraryId}`, 'none');
+ 	const [folderView, setFolderView] = useStorage(`library_folderView_${libraryId}`, 'off');
+-	const [sortKey, setSortKey] = useStorage(`library_sortKey_${libraryId}`, 'SortName');
++	const [sortKey, setSortKey] = useStorage(`library_sortKey_${libraryId}`, 'DateCreated');
+ 	const [sortOrder, setSortOrder] = useStorage(`library_sortOrder_${libraryId}`, '');
+ 	const [searchQuery, setSearchQuery] = useState('');
+ 	const [cardText, setCardText] = useStorage(`library_cardText_${libraryId}`, 'on');
 diff --git a/packages/app/src/views/Login/Login.js b/packages/app/src/views/Login/Login.js
 index fa8e86e..0c8a5b2 100644
 --- a/packages/app/src/views/Login/Login.js
@@ -404,4 +441,88 @@ index 3f8e443..c7f35c2 100644
 +	margin-top: 34px;
 +	font-size: 24px;
 +	color: #6d6d6d;
++}
+diff --git a/packages/app/src/views/Search/Search.js b/packages/app/src/views/Search/Search.js
+index ff161e0..ffb9c0e 100644
+--- a/packages/app/src/views/Search/Search.js
++++ b/packages/app/src/views/Search/Search.js
+@@ -23,6 +23,7 @@ import {isGameLibrary, resolveGameLibraryId} from '../../utils/gameLibrary';
+ import {groupSearchResults, aspectClassForType, isCircleType, filterByName, fetchAllGames, filterGames} from '../../utils/searchGroups';
+ import {foldForSearch} from '../../utils/accentFolding';
+ import SpottableInput from '../../components/SpottableInput/SpottableInput';
++import {seerrState} from '../../components/cine/cineUtils';
+ import {closeTvKeyboard} from '../../components/TVKeyboard/keyboardBus';
+ import useStorage from '../../hooks/useStorage';
+ import useItemMenuHold from '../../hooks/useItemMenuHold';
+@@ -165,7 +166,9 @@ const Search = ({onSelectItem, onSelectSeerrItem, onSelectPerson, onSelectGame,
+ 		return () => { cancelled = true; };
+ 	}, [api]);
+ 
+-	const seerrLabel = seerrName || $L('Seerr');
++	// TaquitoFlix: lo que no está en el servidor sale como «Para descargar».
++	const seerrLabel = 'Para descargar';
++	void seerrName;
+ 
+ 	// Focus the All pill itself. Focusing the tab container would land on the
+ 	// first pill, which is Seerr or Games when either has results.
+@@ -625,6 +628,14 @@ const Search = ({onSelectItem, onSelectSeerrItem, onSelectPerson, onSelectGame,
+ 					{imageUrl
+ 						? <ProxiedImage className={css.cardImage} src={imageUrl} alt={item.title || item.name} />
+ 						: <div className={css.cardPlaceholder}>{item.mediaType === 'movie' ? '🎬' : '📺'}</div>}
++					{(() => {
++						const st = seerrState(item);
++						return (
++							<div className={`${css.cineSeerrBadge} ${st ? css['cineSeerr_' + st.kind] || '' : css.cineSeerr_download}`}>
++								{st ? st.label : 'DESCARGAR'}
++							</div>
++						);
++					})()}
+ 				</div>
+ 				<div className={css.cardTitle}>{item.title || item.name}</div>
+ 				<div className={css.cardSubtitle}>{year}</div>
+@@ -727,7 +738,7 @@ const Search = ({onSelectItem, onSelectSeerrItem, onSelectPerson, onSelectGame,
+ 						recents={recentSearches}
+ 						suggestionsBuilder={fetchKeyboardSuggestions}
+ 						className={css.searchInput}
+-						placeholder={$L('Search movies, shows, music, and more...')}
++						placeholder={'Busca películas, series, personas…'}
+ 						value={query}
+ 						onChange={handleInputChange}
+ 						onKeyDown={handleInputKeyDown}
+diff --git a/packages/app/src/views/Search/Search.module.less b/packages/app/src/views/Search/Search.module.less
+index 27983fa..1343b46 100644
+--- a/packages/app/src/views/Search/Search.module.less
++++ b/packages/app/src/views/Search/Search.module.less
+@@ -427,3 +427,32 @@
+ .recentList  { .flex-wrap-gap(12px); }
+ .resultItems { .flex-row-gap(20px); }
+ .grid        { .flex-wrap-gap(30px; 20px); }
++
++// TaquitoFlix: estado de Seerr encima de la carátula.
++.cineSeerrBadge {
++	white-space: nowrap;
++	max-width: calc(100% - 16px);
++	overflow: hidden;
++	text-overflow: ellipsis;
++	position: absolute;
++	left: 8px;
++	top: 8px;
++	z-index: 3;
++	padding: 4px 10px;
++	border-radius: 4px;
++	background: rgba(0, 0, 0, 0.78);
++	color: #ffffff;
++	font-size: 16px;
++	font-weight: 800;
++	letter-spacing: 0.4px;
++}
++
++.cineSeerr_available {
++	background: #46d369;
++	color: #000000;
++}
++
++.cineSeerr_downloading,
++.cineSeerr_download {
++	background: #e50914;
 +}

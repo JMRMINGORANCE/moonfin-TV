@@ -6,8 +6,9 @@ import Spottable from '@enact/spotlight/Spottable';
 import SpotlightContainerDecorator from '@enact/spotlight/SpotlightContainerDecorator';
 import Spotlight from '@enact/spotlight';
 import useItemMenuHold, {itemWithIdAt} from '../../hooks/useItemMenuHold';
+import {getImageUrl} from '../../utils/helpers';
 import {
-	posterUrl, landscapeUrl, itemTitle, episodeLabel, progressOf, itemKey, isSeerrItem, seerrState
+	posterUrl, landscapeUrl, itemTitle, episodeLabel, progressOf, itemKey, isSeerrItem, seerrState, runtimeLabel
 } from './cineUtils';
 
 import css from './Cine.module.less';
@@ -40,12 +41,21 @@ export const Img = ({src, className}) => {
 export const CineCard = memo(({item, variant, serverUrl, index, badge, rank, onSelect, onFocusItem, spotlightId, onSpotlightLeft}) => {
 	const handleClick = useCallback(() => onSelect?.(item), [item, onSelect]);
 	const handleFocus = useCallback(() => onFocusItem?.(item), [item, onFocusItem]);
-	const title = itemTitle(item);
-	const landscape = variant === 'landscape' || variant === 'library';
-	const src = landscape ? landscapeUrl(serverUrl, item, 560) : posterUrl(serverUrl, item, 420);
-	const progress = variant === 'landscape' ? progressOf(item) : 0;
+	const isEpisodeCard = variant === 'episode';
+	const isPerson = variant === 'person';
+	const title = isEpisodeCard
+		? `${item.IndexNumber != null ? item.IndexNumber + '. ' : ''}${item.Name || ''}`
+		: (isPerson ? item.Name : itemTitle(item));
+	const landscape = variant === 'landscape' || variant === 'library' || isEpisodeCard;
+	let src;
+	if (isPerson) src = item.PrimaryImageTag ? getImageUrl(serverUrl, item.Id, 'Primary', {maxHeight: 360, tag: item.PrimaryImageTag}) : (item.profilePath ? 'https://image.tmdb.org/t/p/w185' + item.profilePath : null);
+	else if (isEpisodeCard) src = item.ImageTags && item.ImageTags.Primary ? getImageUrl(serverUrl, item.Id, 'Primary', {maxWidth: 560, quality: 85}) : landscapeUrl(serverUrl, item, 560);
+	else src = landscape ? landscapeUrl(serverUrl, item, 560) : posterUrl(serverUrl, item, 420);
+	const progress = variant === 'landscape' || isEpisodeCard ? progressOf(item) : 0;
 	const seerr = isSeerrItem(item) ? seerrState(item) : null;
-	const sub = variant === 'landscape' ? episodeLabel(item) : '';
+	let sub = variant === 'landscape' ? episodeLabel(item) : '';
+	if (isEpisodeCard) sub = [runtimeLabel(item.RunTimeTicks), item.UserData && item.UserData.Played ? 'Visto' : ''].filter(Boolean).join('  •  ');
+	if (isPerson) sub = item.Role || item.character || '';
 
 	const cls = [css.card, css[variant] || css.poster].join(' ');
 	return (
@@ -75,10 +85,11 @@ export const CineCard = memo(({item, variant, serverUrl, index, badge, rank, onS
 					<div className={css.progress}><div className={css.progressFill} style={{width: progress + '%'}} /></div>
 				)}
 			</div>
-			{variant === 'landscape' && (
+			{(variant === 'landscape' || isEpisodeCard || isPerson) && (
 				<div className={css.caption}>
 					<div className={css.captionTitle}>{title}</div>
 					{sub && <div className={css.captionSub}>{sub}</div>}
+					{isEpisodeCard && item.Overview && <div className={css.captionOverview}>{item.Overview}</div>}
 				</div>
 			)}
 		</SpottableDiv>
