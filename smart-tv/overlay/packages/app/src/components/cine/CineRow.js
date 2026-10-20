@@ -152,6 +152,7 @@ const CineRow = ({
 			className={`${css.row} ${variant === 'top10' ? css.rowTop10 : ''}`}
 			spotlightId={`cine-row-${rowId}`}
 			data-row-index={rowIndex}
+			data-cine-section=""
 			onFocus={handleFocus}
 		>
 			<h2 className={css.rowTitle}>{title}</h2>

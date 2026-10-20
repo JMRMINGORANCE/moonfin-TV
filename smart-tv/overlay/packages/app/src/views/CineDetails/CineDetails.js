@@ -12,7 +12,7 @@ import {useSeerr} from '../../context/SeerrContext';
 import * as seerrApi from '../../services/seerrApi';
 import {isSeerrOnlyItem} from '../../utils/seerrTarget';
 import CineRow, {Img} from '../../components/cine/CineRow';
-import {CineButton, CineToast, TaquitoLoader, EmptyState} from '../../components/cine/CineBits';
+import {CineButton, CineToast, TaquitoLoader, EmptyState, useSectionNav} from '../../components/cine/CineBits';
 import {
 	backdropUrl, logoUrl, itemTitle, metaLine, overviewOf, runtimeLabel, seerrState, fromSeerr
 } from '../../components/cine/cineUtils';
@@ -223,15 +223,12 @@ const ServerDetails = ({itemId, initialItem, onPlay, onSelectItem, onSelectPerso
 		}
 	}, []);
 
-	const handleRowsKey = useCallback((e) => {
-		if (e.keyCode !== 38) return;
-		const first = e.currentTarget.querySelector('[data-first-section]');
-		if (first && first.contains(document.activeElement)) {
-			e.preventDefault();
-			e.stopPropagation();
-			Spotlight.focus('cine-detail-actions');
-		}
+	const backToActions = useCallback(() => {
+		setMode('top');
+		setOffset(0);
+		Spotlight.focus('cine-detail-actions');
 	}, []);
+	const handleRowsKey = useSectionNav(backToActions);
 
 	const pickSeason = useCallback((e) => {
 		const id = e.currentTarget.getAttribute('data-season');
@@ -319,7 +316,7 @@ const ServerDetails = ({itemId, initialItem, onPlay, onSelectItem, onSelectPerso
 			<div className={css.rowsViewport} onKeyDown={handleRowsKey} onScroll={keepUnscrolled}>
 				<div className={css.rowsInner} style={{transform: `translate3d(0, ${mode === 'rows' ? -offset : 0}px, 0)`}}>
 					{sections.indexOf('seasons') !== -1 && (
-						<Chips className={cineCss.chips} spotlightId="cine-detail-seasons" onFocus={handleChipsFocus} data-first-section={sections[0] === 'seasons' ? '' : undefined}>
+						<Chips className={cineCss.chips} spotlightId="cine-detail-seasons" data-cine-section="" onFocus={handleChipsFocus} data-first-section={sections[0] === 'seasons' ? '' : undefined}>
 							{seasons.map((s) => (
 								<SpottableDiv
 									key={s.Id}
@@ -438,6 +435,11 @@ const SeerrDetails = ({initialItem, seerrNav, backHandlerRef}) => {
 
 	const openSimilar = useCallback((r) => seerrNav?.onSelectItem?.(r), [seerrNav]);
 	const toTop = useCallback(() => setMode('top'), []);
+	const backToActionsSeerr = useCallback(() => {
+		setMode('top');
+		Spotlight.focus('cine-detail-actions');
+	}, []);
+	const seerrRowsKey = useSectionNav(backToActionsSeerr);
 	const toRows = useCallback(() => setMode('rows'), []);
 	const downToRows = useCallback((e) => {
 		if (e.keyCode === 40 && Spotlight.focus('cine-row-similar')) {
@@ -487,7 +489,7 @@ const SeerrDetails = ({initialItem, seerrNav, backHandlerRef}) => {
 					{state && <CineButton icon="restart" label="Actualizar estado" onClick={load} />}
 				</Actions>
 			</div>
-			<div className={css.rowsViewport} onScroll={keepUnscrolled}>
+			<div className={css.rowsViewport} onKeyDown={seerrRowsKey} onScroll={keepUnscrolled}>
 				<div className={css.rowsInner}>
 					<CineRow rowId="similar" rowIndex={0} title="Más títulos similares" items={similar} serverUrl={serverUrl} onSelectItem={openSimilar} onFocusRow={toRows} />
 				</div>

@@ -12,7 +12,7 @@ import {useAuth} from '../../context/AuthContext';
 import {useSettings} from '../../context/SettingsContext';
 import {useSeerr} from '../../context/SeerrContext';
 import CineRow, {Img} from '../../components/cine/CineRow';
-import {CineButton, CineToast, EmptyState, TaquitoLoader} from '../../components/cine/CineBits';
+import {CineButton, CineToast, EmptyState, TaquitoLoader, useSectionNav, focusSoon} from '../../components/cine/CineBits';
 import {
 	backdropUrl, logoUrl, itemTitle, metaLine, overviewOf, episodeLabel, isRecent, shuffle
 } from '../../components/cine/cineUtils';
@@ -135,7 +135,7 @@ const CineHome = ({onSelectItem, onSelectLibrary, onPlay, isVisible = true, back
 	const focusHero = useCallback(() => {
 		setMode('hero');
 		setPreview(null);
-		return Spotlight.focus('cine-hero');
+		return focusSoon('cine-hero');
 	}, []);
 
 	// Al llegar a la portada el foco va a «Reproducir»; al volver de otra
@@ -186,14 +186,11 @@ const CineHome = ({onSelectItem, onSelectLibrary, onPlay, isVisible = true, back
 		}
 	}, [rows]);
 
-	const handleRowKeyDown = useCallback((e) => {
-		// Arriba desde la primera fila vuelve a la destacada.
-		if (e.keyCode === 38 && activeRow === 0 && mode === 'rows' && hero) {
-			e.preventDefault();
-			e.stopPropagation();
-			focusHero();
-		}
-	}, [activeRow, mode, hero, focusHero]);
+	// Arriba desde la primera fila vuelve a la destacada.
+	const backToHero = useCallback(() => {
+		if (hero) focusHero();
+	}, [hero, focusHero]);
+	const handleRowKeyDown = useSectionNav(backToHero);
 
 	// -- acciones -----------------------------------------------------------------
 	const handleSelect = useCallback((item) => {

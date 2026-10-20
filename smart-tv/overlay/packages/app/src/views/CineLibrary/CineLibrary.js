@@ -11,7 +11,7 @@ import SpotlightContainerDecorator from '@enact/spotlight/SpotlightContainerDeco
 import {useAuth} from '../../context/AuthContext';
 import {HOME_ROW_ITEM_FIELDS} from '../../services/jellyfinApi';
 import CineRow, {Img} from '../../components/cine/CineRow';
-import {CineButton, EmptyState, TaquitoLoader} from '../../components/cine/CineBits';
+import {CineButton, EmptyState, TaquitoLoader, useSectionNav, focusSoon} from '../../components/cine/CineBits';
 import {backdropUrl, logoUrl, itemTitle, metaLine, overviewOf, isRecent} from '../../components/cine/cineUtils';
 import Library from '../Library';
 
@@ -108,7 +108,7 @@ const CineLibraryRows = ({library, onSelectItem, onPlay, backHandlerRef, library
 			if (mode === 'rows') {
 				setMode('hero');
 				setOffset(0);
-				Spotlight.focus('cine-lib-buttons');
+				focusSoon('cine-lib-buttons');
 				return true;
 			}
 			return false;
@@ -165,14 +165,12 @@ const CineLibraryRows = ({library, onSelectItem, onPlay, backHandlerRef, library
 		}
 	}, []);
 
-	const chipsKey = useCallback((e) => {
-		if (e.keyCode === 38 && hero) {
-			e.preventDefault();
-			e.stopPropagation();
-			toHero();
-			Spotlight.focus('cine-lib-buttons');
-		}
+	const backToHero = useCallback(() => {
+		if (!hero) return;
+		toHero();
+		focusSoon('cine-lib-buttons');
 	}, [hero, toHero]);
+	const rowsKey = useSectionNav(backToHero);
 
 	const badgeFor = useCallback((item) => (isRecent(item) ? (item.Type === 'Series' ? 'NUEVOS EPISODIOS' : 'NUEVO') : null), []);
 
@@ -217,14 +215,14 @@ const CineLibraryRows = ({library, onSelectItem, onPlay, backHandlerRef, library
 				</div>
 			)}
 
-			<div className={css.rowsViewport} onScroll={keepUnscrolled}>
+			<div className={css.rowsViewport} onKeyDown={rowsKey} onScroll={keepUnscrolled}>
 				<div className={css.rowsInner} style={{transform: `translate3d(0, ${mode === 'rows' ? -offset : 0}px, 0)`}}>
-					<Chips className={cineCss.chips} spotlightId="cine-lib-chips" onFocus={handleChipsFocus} onKeyDown={chipsKey}>
+					<Chips className={cineCss.chips} spotlightId="cine-lib-chips" data-cine-section="" onFocus={handleChipsFocus}>
 						<SpottableDiv className={cineCss.chip} onClick={openAll}>{`Ver todas (de la más nueva a la más antigua)`}</SpottableDiv>
 						<SpottableDiv className={`${cineCss.chip} ${showGenres ? cineCss.chipActive : ''}`} onClick={toggleGenres}>{'Categorías ▾'}</SpottableDiv>
 					</Chips>
 					{showGenres && (
-						<Chips className={cineCss.chips} spotlightId="cine-lib-genres" onFocus={handleChipsFocus}>
+						<Chips className={cineCss.chips} spotlightId="cine-lib-genres" data-cine-section="" onFocus={handleChipsFocus}>
 							{genres.map((g) => (
 								<SpottableDiv key={g.Id} className={cineCss.chip} data-genre={g.Name} onClick={openGenre}>{g.Name}</SpottableDiv>
 							))}

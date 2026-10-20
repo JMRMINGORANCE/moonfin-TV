@@ -1,6 +1,7 @@
 // TaquitoFlix: piezas pequeñas compartidas (botones, iconos, Taquito
 // cargando, pantallas vacías y avisos).
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
+import Spotlight from '@enact/spotlight';
 import Spottable from '@enact/spotlight/Spottable';
 
 import css from './Cine.module.less';
@@ -80,4 +81,45 @@ export const CineToast = ({title, text, duration = 7000, onDone}) => {
 			{text && <div className={css.toastText}>{text}</div>}
 		</div>
 	);
+};
+
+// Arriba y abajo entre las filas (y los chips) de una pantalla, sin dejarlo
+// en manos del cálculo geométrico de Spotlight: como cada fila se desliza por
+// su cuenta, la tarjeta de encima puede no estar justo arriba y el foco se iba
+// al menú lateral o no subía. Cada sección se marca con data-cine-section.
+// Desde la primera, «arriba» llama a onTop; desde la última, «abajo» no hace nada.
+export const useSectionNav = (onTop) => useCallback((e) => {
+	if (e.keyCode !== 38 && e.keyCode !== 40) return;
+	const sections = Array.prototype.slice.call(e.currentTarget.querySelectorAll('[data-cine-section]'));
+	const current = document.activeElement;
+	let i = -1;
+	for (let k = 0; k < sections.length; k++) {
+		if (sections[k].contains(current)) i = k;
+	}
+	if (i < 0) return;
+	e.preventDefault();
+	e.stopPropagation();
+	const next = sections[i + (e.keyCode === 40 ? 1 : -1)];
+	if (!next) {
+		if (e.keyCode === 38 && onTop) onTop();
+		return;
+	}
+	const id = next.getAttribute('data-spotlight-id');
+	if (id && Spotlight.focus(id)) return;
+	const first = next.querySelector('.spottable');
+	if (first) Spotlight.focus(first);
+}, [onTop]);
+
+// Enfoca algo que puede no estar dibujado todavía (por ejemplo los botones de
+// la destacada, que reaparecen al volver arriba): lo intenta ya y, si no
+// existe aún, otra vez tras el siguiente repintado.
+export const focusSoon = (id) => {
+	if (Spotlight.focus(id)) return true;
+	let tries = 0;
+	const retry = () => {
+		tries += 1;
+		if (!Spotlight.focus(id) && tries < 5) setTimeout(retry, 60);
+	};
+	setTimeout(retry, 30);
+	return true;
 };

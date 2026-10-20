@@ -9,7 +9,7 @@ import {useAuth} from '../../context/AuthContext';
 import {useSeerr} from '../../context/SeerrContext';
 import * as seerrApi from '../../services/seerrApi';
 import CineRow, {Img} from '../../components/cine/CineRow';
-import {CineButton, CineToast, EmptyState, TaquitoLoader} from '../../components/cine/CineBits';
+import {CineButton, CineToast, EmptyState, TaquitoLoader, useSectionNav, focusSoon} from '../../components/cine/CineBits';
 import {backdropUrl, itemTitle, metaLine, overviewOf, seerrState, fromSeerr} from '../../components/cine/cineUtils';
 
 import cineCss from '../../components/cine/Cine.module.less';
@@ -93,7 +93,7 @@ const CineSeerr = ({onSelectItem, onSelectGenre, onOpenRequests, backHandlerRef}
 				setMode('hero');
 				setOffset(0);
 				setPreview(null);
-				Spotlight.focus('cine-seerr-buttons');
+				focusSoon('cine-seerr-buttons');
 				return true;
 			}
 			return false;
@@ -135,14 +135,12 @@ const CineSeerr = ({onSelectItem, onSelectGenre, onOpenRequests, backHandlerRef}
 		}
 	}, [rows]);
 
-	const chipsKey = useCallback((e) => {
-		if (e.keyCode === 38 && hero) {
-			e.preventDefault();
-			e.stopPropagation();
-			toHero();
-			Spotlight.focus('cine-seerr-buttons');
-		}
+	const backToHero = useCallback(() => {
+		if (!hero) return;
+		toHero();
+		focusSoon('cine-seerr-buttons');
 	}, [hero, toHero]);
+	const rowsKey = useSectionNav(backToHero);
 
 	const heroState = hero ? seerrState(hero) : null;
 	const canAsk = isAuthenticated && seerrApi.canRequest(seerrUser && seerrUser.permissions);
@@ -212,10 +210,10 @@ const CineSeerr = ({onSelectItem, onSelectGenre, onOpenRequests, backHandlerRef}
 				</div>
 			)}
 
-			<div className={css.rowsViewport} onScroll={keepUnscrolled}>
+			<div className={css.rowsViewport} onKeyDown={rowsKey} onScroll={keepUnscrolled}>
 				<div className={css.rowsInner} style={{transform: `translate3d(0, ${mode === 'rows' ? -offset : 0}px, 0)`}}>
 					{genres.length > 0 && (
-						<Chips className={cineCss.chips} spotlightId="cine-seerr-chips" onFocus={handleChipsFocus} onKeyDown={chipsKey}>
+						<Chips className={cineCss.chips} spotlightId="cine-seerr-chips" data-cine-section="" onFocus={handleChipsFocus}>
 							{genres.map((g) => (
 								<SpottableDiv key={g.id} className={cineCss.chip} data-id={g.id} data-name={g.name} onClick={openGenre}>{g.name}</SpottableDiv>
 							))}
