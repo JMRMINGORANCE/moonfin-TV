@@ -16,6 +16,8 @@ env:
 jobs:
   android:
     name: Android + Android TV (APK)
+    # Las ramas samsung-* solo prueban el paquete de la tele.
+    if: ${{ !startsWith(github.ref, 'refs/heads/samsung-') }}
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.apk.outputs.version }}
@@ -261,3 +263,24 @@ jobs:
             APKs para Android y Android TV, y paquete WGT para televisores Samsung (Tizen).
             Basado en Moonfin-Core@${{ env.UPSTREAM_REF }} (GPL-2.0).
           files: dist/*
+
+  prueba-samsung:
+    name: Prueba de Samsung (prerelease)
+    needs: [tizen]
+    if: ${{ startsWith(github.ref, 'refs/heads/samsung-') }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: tizen
+          path: dist
+      - name: Publicar como prerelease "samsung-prueba"
+        run: |
+          ls -l dist
+          gh release delete samsung-prueba -R "$GITHUB_REPOSITORY" -y --cleanup-tag || true
+          gh release create samsung-prueba -R "$GITHUB_REPOSITORY" --prerelease \
+            --target "$GITHUB_SHA" --title "Prueba Samsung" \
+            --notes "Paquete de prueba de TaquitoFlix para Samsung. No afecta a las actualizaciones." \
+            dist/*.wgt
