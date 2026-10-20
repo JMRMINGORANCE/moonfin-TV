@@ -1,0 +1,38 @@
+name: Dependencias Smart-TV (herramienta)
+
+# Empaqueta node_modules de la app de tele de Moonfin para poder compilarla
+# fuera de GitHub. Se publica como prerelease "deps-smart-tv".
+on:
+  push:
+    branches: [samsung-deps]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deps:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar y empaquetar
+        run: |
+          REF=$(tr -d '[:space:]' < smart-tv/UPSTREAM_REF)
+          git init -q tv && cd tv
+          git remote add origin https://github.com/Moonfin-Client/Smart-TV.git
+          git fetch -q --depth 1 origin "$REF" && git checkout -q FETCH_HEAD
+          npm ci --no-audit --no-fund
+          find . -name node_modules -type d -prune | head -20
+          tar czf ../deps.tgz $(find . -name node_modules -type d -prune) tools
+          ls -lh ../deps.tgz
+      - name: Publicar
+        run: |
+          gh release delete deps-smart-tv -R "$GITHUB_REPOSITORY" -y --cleanup-tag || true
+          gh release create deps-smart-tv -R "$GITHUB_REPOSITORY" --prerelease \
+            --target "$GITHUB_SHA" --title "Herramienta: dependencias Smart-TV" \
+            --notes "Solo para compilar la app de tele fuera de GitHub." deps.tgz
