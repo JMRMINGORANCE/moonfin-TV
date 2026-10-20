@@ -1,0 +1,407 @@
+diff --git a/packages/app/src/App/App.js b/packages/app/src/App/App.js
+index 8091430..fc98d51 100644
+--- a/packages/app/src/App/App.js
++++ b/packages/app/src/App/App.js
+@@ -70,7 +70,7 @@ import {buildThemeCssVars, toRgbTriplet} from '../theme/themeSpec';
+ import {applyThemeOverrides} from '../theme/themeOverrides';
+ import {resolveOverlayColor} from '../theme/overlayColors';
+ import Login from '../views/Login';
+-import Browse from '../views/Browse';
++import CineHome from '../views/CineHome';
+ import {isGameLibrary, refreshGameLibraries, resolveGameLibraryId} from '../utils/gameLibrary';
+ 
+ const Details = lazy(() => import('../views/Details'));
+@@ -405,7 +405,8 @@ const AppContent = (props) => {
+ 		(async () => {
+ 			const activeServer = await getActiveServer().catch(() => null);
+ 			const run = await shouldRunSetupWizard(activeServer?.id, serverUrl, user.Id);
+-			if (!cancelled && run) setSetupWizardActive(true);
++			// TaquitoFlix: sin asistente inicial, la app ya viene configurada.
++			void run;
+ 		})();
+ 		return () => {
+ 			cancelled = true;
+@@ -1904,7 +1905,8 @@ const AppContent = (props) => {
+ 				the same card. It's let go at sign in and during playback, which wants the memory. */}
+ 				{panelIndex !== PANELS.LOGIN && panelIndex !== PANELS.PLAYER && panelIndex !== PANELS.GAME_PLAYER && (
+ 					<HomeLayer style={panelIndex === PANELS.BROWSE ? null : hiddenStyle}>
+-						<Browse
++						<CineHome
++							onPlay={handlePlay}
+ 							onSelectItem={handleSelectItem}
+ 							onSelectLibrary={handleSelectLibrary}
+ 							onOpenRecordings={handleOpenRecordings}
+@@ -2044,14 +2046,15 @@ const AppContent = (props) => {
+ 	);
+ };
+ 
+-let storedLocale = 'en-US';
++// TaquitoFlix: en español desde el primer arranque.
++let storedLocale = 'es';
+ try {
+ 	const bootLocale = localStorage.getItem('moonfin_uiLanguage');
+ 	if (bootLocale) {
+ 		storedLocale = bootLocale;
+ 	} else {
+ 		const stored = JSON.parse(localStorage.getItem('moonfin_settings') || '{}');
+-		storedLocale = stored.uiLanguage || 'en-US';
++		storedLocale = stored.uiLanguage || 'es';
+ 	}
+ } catch (e) { /* use default */ }
+ 
+diff --git a/packages/app/src/components/Sidebar/Sidebar.module.less b/packages/app/src/components/Sidebar/Sidebar.module.less
+index 2321bde..2df3e32 100644
+--- a/packages/app/src/components/Sidebar/Sidebar.module.less
++++ b/packages/app/src/components/Sidebar/Sidebar.module.less
+@@ -281,3 +281,10 @@
+ 		text-shadow: 0 0 8px rgba(var(--theme-accent-rgb, 255, 46, 146), 0.35);
+ 	}
+ }
++
++// TaquitoFlix: al abrir el menú, una sombra oscurece lo que hay detrás para
++// que los textos no se mezclen con la portada.
++.sidebar.expanded {
++	background: rgba(0, 0, 0, 0.94) !important;
++	box-shadow: 160px 0 220px 80px rgba(0, 0, 0, 0.88);
++}
+diff --git a/packages/app/src/context/defaultSettings.js b/packages/app/src/context/defaultSettings.js
+index 3d452b8..10bcc5d 100644
+--- a/packages/app/src/context/defaultSettings.js
++++ b/packages/app/src/context/defaultSettings.js
+@@ -9,7 +9,7 @@ export const defaultSettings = {
+ 	maxBitrate: 0,
+ 	audioLanguage: '',
+ 	subtitleLanguage: '',
+-	uiLanguage: 'en-US',
++	uiLanguage: 'es',
+ 	subtitleMode: 'default',
+ 	subtitleSize: 'medium',
+ 	subtitlePosition: 'bottom',
+@@ -200,7 +200,7 @@ export const defaultSettings = {
+ 	serverSortBy: 'name',
+ 	exitConfirmation: true,
+ 	updateNotificationsEnabled: true,
+-	navbarPosition: 'top',
++	navbarPosition: 'left',
+ 	navbarAlwaysExpanded: false,
+ 	oledMode: 'off',
+ 	screensaverEnabled: true,
+@@ -317,8 +317,8 @@ export const defaultSettings = {
+ 	// instead of letting a handset decide how the TV types.
+ 	preferSystemImeKeyboard: false,
+ 	focusBorderColor: '',
+-	navbarOpacity: 50,
+-	navbarColor: 'gray',
++	navbarOpacity: 94,
++	navbarColor: 'black',
+ 	// webOS TLS proxy fallback: when the WebView rejects a server's certificate
+ 	// (net::ERR_INSECURE_RESPONSE), allow the bundled Node service to fetch with
+ 	// certificate validation disabled. Off by default; local-only (not synced).
+diff --git a/packages/app/src/theme/themeRegistry.js b/packages/app/src/theme/themeRegistry.js
+index a848080..4e5c624 100644
+--- a/packages/app/src/theme/themeRegistry.js
++++ b/packages/app/src/theme/themeRegistry.js
+@@ -1,47 +1,48 @@
+ import {parseThemeSpec} from './themeSpec';
+ 
++// TaquitoFlix: el tema de siempre, en negro y rojo.
+ const moonfinTheme = parseThemeSpec({
+ 	schemaVersion: 1,
+ 	id: 'moonfin',
+-	displayName: 'Moonfin',
++	displayName: 'TaquitoFlix',
+ 	colors: {
+-		background: '#FF101010',
++		background: '#FF000000',
+ 		onBackground: '#FFFFFFFF',
+-		surface: '#FF1A1A1A',
++		surface: '#FF141414',
+ 		onSurface: '#FFFFFFFF',
+ 		surfaceVariant: '#FF252525',
+ 		scrim: '#CC000000',
+-		accent: '#FF00A4DC',
++		accent: '#FFE50914',
+ 		onAccent: '#FFFFFFFF',
+ 		buttonNormal: '#FF2A2A2A',
+ 		buttonFocused: '#FFFFFFFF',
+ 		buttonDisabled: '#FF1E1E1E',
+ 		buttonActive: '#FF3A3A3A',
+ 		onButtonNormal: '#FFFFFFFF',
+-		onButtonFocused: '#FF00A4DC',
++		onButtonFocused: '#FFE50914',
+ 		onButtonDisabled: '#FF666666',
+ 		inputBackground: '#FF2A2A2A',
+ 		inputFocused: '#FF3A3A3A',
+ 		inputBorder: '#FF404040',
+-		inputBorderFocused: '#FF00A4DC',
++		inputBorderFocused: '#FFE50914',
+ 		rangeTrack: '#FF404040',
+-		rangeProgress: '#FF00A4DC',
+-		rangeThumb: '#FF00A4DC',
++		rangeProgress: '#FFE50914',
++		rangeThumb: '#FFE50914',
+ 		seekbarBuffered: '#80FFFFFF',
+-		badgeBackground: '#FF00A4DC',
++		badgeBackground: '#FFE50914',
+ 		onBadge: '#FFFFFFFF',
+-		badgeUnplayed: '#FF00A4DC',
++		badgeUnplayed: '#FFE50914',
+ 		badgeWatched: '#FF22C55E',
+ 		recordingActive: '#FFEF4444',
+ 		recordingScheduled: '#FFF59E0B'
+ 	},
+ 	borders: {
+ 		cardBorder: {color: '#00000000', width: 1},
+-		chipBorder: {color: '#558EC8F0', width: 1},
+-		focusBorder: {color: '#FF00A4DC', width: 2},
++		chipBorder: {color: '#55E50914', width: 1},
++		focusBorder: {color: '#FFE50914', width: 2},
+ 		cardRadius: 8,
+ 		chipRadius: 999,
+-		chipBackground: '#1F8EC8F0',
++		chipBackground: '#1FE50914',
+ 		focusGlow: []
+ 	}
+ });
+diff --git a/packages/app/src/views/Login/Login.js b/packages/app/src/views/Login/Login.js
+index fa8e86e..0c8a5b2 100644
+--- a/packages/app/src/views/Login/Login.js
++++ b/packages/app/src/views/Login/Login.js
+@@ -42,6 +42,8 @@ const credentialFocusTarget = (user) => {
+ 	return user.hasPassword ? 'password-input' : 'signin-btn';
+ };
+ 
++const CINE_PROFILE_COLORS = ['#E50914', '#0071EB', '#F5A623', '#2BB673', '#8E44AD', '#E67E22', '#16A085'];
++
+ const Login = ({
+ 	onLoggedIn,
+ 	onServerAdded,
+@@ -878,59 +880,57 @@ const Login = ({
+ 		);
+ 	};
+ 
++	// TaquitoFlix: «¿Quién está viendo?» con perfiles cuadrados de colores y
++	// Taquito cuando el perfil no tiene foto.
+ 	const renderUsers = () => (
+-		<FocusArea className={`${css.card} ${css.cardCentered}`}>
+-			<p className={css.serverLabel}>{server?.name}</p>
+-			<h1 className={css.title}>{$L("Who's watching?")}</h1>
++		<FocusArea className={css.cineUsers}>
++			<h1 className={css.cineUsersTitle}>{'¿Quién está viendo?'}</h1>
+ 			{server?.loginDisclaimer && <p className={css.disclaimer}>{server.loginDisclaimer}</p>}
+ 
+-			<div className={css.userRow}>
+-				<div className={css.userRowInner}>
+-					{users.map((user, index) => (
+-						<SpottableDiv
+-							key={user.id}
+-							data-spotlight-id={`user-${index}`}
+-							data-user-id={user.id}
+-							className={css.userCard}
+-							onClick={handleUserClick}
+-						>
++			<div className={css.cineUserRow}>
++				{users.map((user, index) => (
++					<SpottableDiv
++						key={user.id}
++						data-spotlight-id={`user-${index}`}
++						data-user-id={user.id}
++						className={css.cineUser}
++						onClick={handleUserClick}
++					>
++						<div className={css.cineAvatar} style={{background: CINE_PROFILE_COLORS[index % CINE_PROFILE_COLORS.length]}}>
+ 							{user.imageTag ? (
+ 								<img
+ 									src={jellyfinApi.getUserImageUrl(jellyfinApi.getServerUrl(), user.id, user.imageTag, server?.serverType)}
+ 									alt={user.name}
+-									className={css.userAvatar}
++									className={css.cineAvatarImg}
+ 								/>
+ 							) : (
+-								<div className={css.userAvatarPlaceholder}>
+-									<MaterialIcon name="personFilled" className={css.placeholderIcon} />
+-								</div>
++								<img src="resources/cine/taquito.svg" alt="" className={css.cineAvatarTaquito} />
+ 							)}
+-							<div className={css.userName}>{user.name}</div>
+-						</SpottableDiv>
+-					))}
+-				</div>
++						</div>
++						<div className={css.cineUserName}>{user.name}</div>
++					</SpottableDiv>
++				))}
+ 			</div>
+ 
+ 			{error && <div className={css.errorText}>{error}</div>}
+ 
+-			<div className={`${css.actionRow} ${css.actionRowWide}`}>
++			<div className={css.cineUserActions}>
+ 				<SpottableButton
+ 					data-spotlight-id="add-user-btn"
+-					className={css.outlineButton}
++					className={css.cineOutline}
+ 					onClick={handleAddUser}
+ 				>
+-					<MaterialIcon name="person" className={css.outlineButtonIcon} />
+-					{$L('Add User')}
++					{'Añadir perfil'}
+ 				</SpottableButton>
+ 				<SpottableButton
+ 					data-spotlight-id="select-server-btn"
+-					className={css.outlineButton}
++					className={css.cineOutline}
+ 					onClick={goToServers}
+ 				>
+-					<MaterialIcon name="home" className={css.outlineButtonIcon} />
+-					{$L('Select Server')}
++					{'Cambiar de servidor'}
+ 				</SpottableButton>
+ 			</div>
++			{server?.name && <p className={css.cineServerName}>{server.name}</p>}
+ 		</FocusArea>
+ 	);
+ 
+@@ -1218,7 +1218,7 @@ const Login = ({
+ 					<img
+ 						src="resources/banner-dark.png"
+ 						alt="Moonfin"
+-						className={`${css.logo} ${isNarrow ? css.logoSmall : ''}`}
++						className={`${css.logo} ${isNarrow || step === 'users' ? css.logoSmall : ''}`}
+ 					/>
+ 				</div>
+ 
+diff --git a/packages/app/src/views/Login/Login.module.less b/packages/app/src/views/Login/Login.module.less
+index 3f8e443..c7f35c2 100644
+--- a/packages/app/src/views/Login/Login.module.less
++++ b/packages/app/src/views/Login/Login.module.less
+@@ -712,3 +712,129 @@
+ .keyboardSpacerOpen {
+ 	height: 560px;
+ }
++
++// ---------------------------------------------------------------------------
++// TaquitoFlix: fondo negro con un brillo rojo y «¿Quién está viendo?».
++// ---------------------------------------------------------------------------
++
++.page {
++	background: radial-gradient(ellipse at 50% 0%, #3a0306 0%, #120102 45%, #000000 80%);
++}
++
++.card {
++	background: rgba(20, 20, 20, 0.92);
++	border-color: rgba(255, 255, 255, 0.12);
++}
++
++.cineUsers {
++	display: flex;
++	flex-direction: column;
++	align-items: center;
++	padding: 20px 0 40px 0;
++}
++
++.cineUsersTitle {
++	margin: 10px 0 60px 0;
++	font-size: 84px;
++	font-weight: 700;
++	color: #ffffff;
++	letter-spacing: -0.5px;
++}
++
++.cineUserRow {
++	display: flex;
++	flex-wrap: wrap;
++	justify-content: center;
++	max-width: 1600px;
++}
++
++.cineUser {
++	margin: 0 26px 40px 26px;
++	display: flex;
++	flex-direction: column;
++	align-items: center;
++	outline: none;
++	cursor: pointer;
++	transition: transform 0.15s ease-out;
++
++	&:focus {
++		transform: scale(1.08);
++
++		.cineAvatar {
++			box-shadow: 0 0 0 6px #ffffff;
++		}
++
++		.cineUserName {
++			color: #ffffff;
++		}
++	}
++}
++
++.cineAvatar {
++	position: relative;
++	width: 220px;
++	height: 220px;
++	border-radius: 10px;
++	overflow: hidden;
++	display: flex;
++	align-items: flex-end;
++	justify-content: center;
++}
++
++.cineAvatarImg {
++	position: absolute;
++	top: 0;
++	left: 0;
++	width: 100%;
++	height: 100%;
++	object-fit: cover;
++}
++
++.cineAvatarTaquito {
++	width: 86%;
++	height: 86%;
++	margin-bottom: -6%;
++	object-fit: contain;
++	filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
++}
++
++.cineUserName {
++	margin-top: 18px;
++	font-size: 34px;
++	color: #b3b3b3;
++}
++
++.cineUserActions {
++	display: flex;
++	margin-top: 30px;
++
++	> * {
++		margin: 0 16px;
++	}
++}
++
++.cineOutline {
++	height: 74px;
++	padding: 0 46px;
++	border: 3px solid #8c8c8c;
++	border-radius: 4px;
++	background: transparent;
++	color: #b3b3b3;
++	font-size: 30px;
++	letter-spacing: 2px;
++	text-transform: uppercase;
++	outline: none;
++	cursor: pointer;
++
++	&:focus {
++		border-color: #ffffff;
++		background: #ffffff;
++		color: #000000;
++	}
++}
++
++.cineServerName {
++	margin-top: 34px;
++	font-size: 24px;
++	color: #6d6d6d;
++}

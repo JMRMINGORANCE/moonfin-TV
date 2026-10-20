@@ -152,6 +152,22 @@ def images():
     w, h = base.viewbox(word)
     save(base.render(word, 1179, round(1179 * h / w)), APP / "resources/logo-and-text.png")
     save(base.compose(1920, 640, None, word, 0.9), APP / "resources/banner-dark.png")
+    # Taquito para las pantallas propias (cargando, vacíos, perfiles) y los
+    # fondos del protector de pantalla.
+    cine = APP / "resources/cine"
+    cine.mkdir(parents=True, exist_ok=True)
+    (cine / "taquito.svg").write_text(head, encoding="utf-8")
+    (cine / "wordmark.svg").write_text(word, encoding="utf-8")
+    log("generado resources/cine/taquito.svg y wordmark.svg")
+    import make_wallpapers as wp
+    from PIL import Image
+    import io
+    for i, (name, fn) in enumerate(wp.WALLPAPERS, 1):
+        png = base.cairosvg.svg2png(bytestring=fn().encode("utf-8"), output_width=1920, output_height=1080)
+        img = Image.open(io.BytesIO(png)).convert("RGB")
+        out = cine / f"wallpaper-{i}.jpg"
+        img.save(out, quality=86, optimize=True)
+        log(f"generado {out.relative_to(ROOT)} ({name})")
 
 
 if __name__ == "__main__":
