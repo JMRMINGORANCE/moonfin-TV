@@ -104,73 +104,57 @@ jobs:
           path: out/*.apk
 
   tizen:
+    # TaquitoFlix para Samsung se construye sobre la app de tele de Moonfin
+    # (Moonfin-Client/Smart-TV, React/Enact): la versión Flutter tardaba más de
+    # dos minutos en arrancar en el navegador de la tele.
     name: Samsung Tizen (WGT)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Descargar el código base y aplicar el parche
-        run: |
-          UPSTREAM_REF=$(tr -d '[:space:]' < UPSTREAM_REF)
-          echo "UPSTREAM_REF=$UPSTREAM_REF" >> "$GITHUB_ENV"
-          git init -q src && cd src
-          git remote add origin "$UPSTREAM_REPO"
-          git fetch -q --depth 1 origin "$UPSTREAM_REF"
-          git checkout -q FETCH_HEAD
-          git apply --whitespace=nowarn ../patches/*.patch
-          cp -r ../overlay/. .
-          # La misma versión de Flutter que usa esa versión de Moonfin.
-          FV=$(grep -m1 "FLUTTER_VERSION:" .github/workflows/build.yml | sed "s/.*FLUTTER_VERSION:[[:space:]]*//; s/['\"]//g" | tr -d '[:space:]' || true)
-          echo "FLUTTER_VERSION=${FV:-3.47.2}" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Marca TaquitoFlix (textos, iconos y logos)
-        working-directory: src
+      - name: Descargar la app de tele de Moonfin y aplicar TaquitoFlix
+        run: |
+          REF=$(tr -d '[:space:]' < smart-tv/UPSTREAM_REF)
+          echo "SMART_TV_REF=$REF" >> "$GITHUB_ENV"
+          git init -q tv && cd tv
+          git remote add origin https://github.com/Moonfin-Client/Smart-TV.git
+          git fetch -q --depth 1 origin "$REF"
+          git checkout -q FETCH_HEAD
+          for p in ../smart-tv/patches/*.patch; do
+            [ -e "$p" ] || continue
+            git apply --whitespace=nowarn "$p"
+          done
+          cp -r ../smart-tv/overlay/. .
+
+      - name: Marca TaquitoFlix (nombre, iconos, idioma y servidor)
         run: |
           sudo apt-get install -y -qq libcairo2 > /dev/null
           python3 -m pip install --quiet cairosvg pillow
-          python3 ../branding/rebrand.py
+          # Versión que crece en cada compilación (2.7.N en config.xml).
+          RUN=${{ github.run_number }}
+          echo "VERSION=2.7.0.${RUN}" >> "$GITHUB_ENV"
+          python3 smart-tv/branding/rebrand_tv.py tv "2.7.${RUN}"
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
-      - name: Compilar web en modo TV
-        working-directory: src
+      - name: Compilar la app de tele
+        working-directory: tv
+        env:
+          CI: 'true'
         run: |
-          flutter pub get
-          # Sin --wasm: el navegador de Tizen no soporta WasmGC.
-          flutter build web --release --base-href / \
-            --dart-define=MOONFIN_FORCE_TV=true \
-            --dart-define=DISTRIBUTION_CHANNEL=tizen
+          npm ci --no-audit --no-fund
+          npm run build:tizen -- --skip-lint
+          test -f packages/build-tizen/dist/index.html
+          test -f packages/build-tizen/dist/config.xml
 
       - name: Montar el paquete Tizen
         run: |
-          BASE=$(grep '^version:' src/pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '[:space:]')
-          # Cada compilación con su número, como en Android (v2.7.0.N). Tizen solo
-          # admite tres cifras en config.xml: allí va 2.7.N, que también crece.
-          RUN=${{ github.run_number }}
-          VERSION="${BASE}.${RUN}"
-          TIZEN_VERSION="$(echo "$BASE" | cut -d. -f1-2).${RUN}"
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          PKG=tizen-pkg
-          cp -r src/build/web "$PKG"
-          # La app se carga desde el sistema de ficheros del televisor: rutas relativas.
-          sed -i 's|<base href="/">|<base href="./">|' "$PKG/index.html"
-          cp tizen/tizen-keys.js "$PKG/tizen-keys.js"
-          cp tizen/tizen-compat.js "$PKG/tizen-compat.js"
-          # Primero la compatibilidad (fetch de archivos locales y aviso de
-          # errores), luego el mando.
-          sed -i 's|<head>|<head>\n  <script src="tizen-compat.js"></script>\n  <script src="tizen-keys.js"></script>|' "$PKG/index.html"
-          # El navegador de la tele no entiende "inset": la pantalla de carga
-          # usa las cuatro esquinas.
-          sed -i 's|inset: 0;|top: 0; right: 0; bottom: 0; left: 0;|g' "$PKG/index.html"
-          grep -q 'tizen-compat.js' "$PKG/index.html"
-          sed "s/__VERSION__/$TIZEN_VERSION/" tizen/config.xml > "$PKG/config.xml"
-          grep -q "tizen:content-security-policy" "$PKG/config.xml"
-          cp src/web/icons/Icon-512.png "$PKG/icon.png"
+          cp -r tv/packages/build-tizen/dist tizen-pkg
+          grep -q 'TaquitoFlx.TaquitoFlix' tizen-pkg/config.xml
           mkdir -p out
-          (cd "$PKG" && zip -qr "../out/TaquitoFlix_Tizen_v${VERSION}_sin-firmar.wgt" .)
+          (cd tizen-pkg && zip -qr "../out/TaquitoFlix_Tizen_v${VERSION}_sin-firmar.wgt" .)
 
       - name: Firmar WGT (opcional, con certificado Samsung)
         env:
