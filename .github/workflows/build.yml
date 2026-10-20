@@ -146,7 +146,12 @@ jobs:
 
       - name: Montar el paquete Tizen
         run: |
-          VERSION=$(grep '^version:' src/pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '[:space:]')
+          BASE=$(grep '^version:' src/pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '[:space:]')
+          # Cada compilación con su número, como en Android (v2.7.0.N). Tizen solo
+          # admite tres cifras en config.xml: allí va 2.7.N, que también crece.
+          RUN=${{ github.run_number }}
+          VERSION="${BASE}.${RUN}"
+          TIZEN_VERSION="$(echo "$BASE" | cut -d. -f1-2).${RUN}"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           PKG=tizen-pkg
           cp -r src/build/web "$PKG"
@@ -161,7 +166,8 @@ jobs:
           # usa las cuatro esquinas.
           sed -i 's|inset: 0;|top: 0; right: 0; bottom: 0; left: 0;|g' "$PKG/index.html"
           grep -q 'tizen-compat.js' "$PKG/index.html"
-          sed "s/__VERSION__/$VERSION/" tizen/config.xml > "$PKG/config.xml"
+          sed "s/__VERSION__/$TIZEN_VERSION/" tizen/config.xml > "$PKG/config.xml"
+          grep -q "tizen:content-security-policy" "$PKG/config.xml"
           cp src/web/icons/Icon-512.png "$PKG/icon.png"
           mkdir -p out
           (cd "$PKG" && zip -qr "../out/TaquitoFlix_Tizen_v${VERSION}_sin-firmar.wgt" .)
