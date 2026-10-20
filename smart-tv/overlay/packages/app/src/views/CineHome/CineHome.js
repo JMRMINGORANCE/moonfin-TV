@@ -50,7 +50,6 @@ const CineHome = ({onSelectItem, onSelectLibrary, onPlay, isVisible = true, back
 
 	const [mode, setMode] = useState('hero');
 	const [preview, setPreview] = useState(null);
-	const [activeRow, setActiveRow] = useState(0);
 	const [heroFav, setHeroFav] = useState(false);
 	const rowsRef = useRef({});
 	const previewTimer = useRef(null);
@@ -116,7 +115,6 @@ const CineHome = ({onSelectItem, onSelectLibrary, onPlay, isVisible = true, back
 	const [offset, setOffset] = useState(0);
 	const handleFocusRow = useCallback((index, node) => {
 		setMode('rows');
-		setActiveRow(index);
 		if (node && typeof node.offsetTop === 'number') setOffset(node.offsetTop);
 	}, []);
 
@@ -181,7 +179,6 @@ const CineHome = ({onSelectItem, onSelectLibrary, onPlay, isVisible = true, back
 			e.preventDefault();
 			e.stopPropagation();
 			setMode('rows');
-			setActiveRow(0);
 			Spotlight.focus(`cine-row-${rows[0].id}`);
 		}
 	}, [rows]);

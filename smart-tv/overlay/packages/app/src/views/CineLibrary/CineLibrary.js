@@ -11,7 +11,7 @@ import SpotlightContainerDecorator from '@enact/spotlight/SpotlightContainerDeco
 import {useAuth} from '../../context/AuthContext';
 import {HOME_ROW_ITEM_FIELDS} from '../../services/jellyfinApi';
 import CineRow, {Img} from '../../components/cine/CineRow';
-import {CineButton, EmptyState, TaquitoLoader, useSectionNav, focusSoon} from '../../components/cine/CineBits';
+import {CineButton, EmptyState, TaquitoLoader, useSectionNav, focusSoon, recallPage, rememberPage, rememberFocus} from '../../components/cine/CineBits';
 import {backdropUrl, logoUrl, itemTitle, metaLine, overviewOf, isRecent} from '../../components/cine/cineUtils';
 import Library from '../Library';
 
@@ -34,17 +34,20 @@ const keepUnscrolled = (e) => {
 };
 
 const CineLibraryRows = ({library, onSelectItem, onPlay, backHandlerRef, libraryProps}) => {
-	const {api, serverUrl} = useAuth();
+	const {api, serverUrl, user} = useAuth();
 	const type = CINE_TYPES[library.CollectionType];
 	const noun = type === 'Series' ? 'series' : 'películas';
-	const [rows, setRows] = useState([]);
-	const [hero, setHero] = useState(null);
-	const [genres, setGenres] = useState([]);
-	const [loading, setLoading] = useState(true);
+	const memoKey = 'lib-' + (user ? user.Id : '') + '-' + library.Id;
+	const saved = recallPage(memoKey);
+	const memo = saved && saved.rows ? saved : null;
+	const [rows, setRows] = useState(memo ? memo.rows : []);
+	const [hero, setHero] = useState(memo ? memo.hero : null);
+	const [genres, setGenres] = useState(memo ? memo.genres : []);
+	const [loading, setLoading] = useState(!memo);
 	const [mode, setMode] = useState('hero');
 	const [offset, setOffset] = useState(0);
 	const [preview, setPreview] = useState(null);
-	const [grid, setGrid] = useState(null); // null | {genre}
+	const [grid, setGrid] = useState(saved && saved.grid ? saved.grid : null); // null | {genre}
 	const [showGenres, setShowGenres] = useState(false);
 	const innerBackRef = useRef(null);
 	const timer = useRef(null);
@@ -70,27 +73,44 @@ const CineLibraryRows = ({library, onSelectItem, onPlay, backHandlerRef, library
 				{id: 'mine', title: 'Mi lista', items: mine},
 				{id: 'top', title: 'Las más valoradas', items: top}
 			];
-			setRows(base.filter((r) => r.items.length));
-			setGenres(genreList);
+			const baseRows = base.filter((r) => r.items.length);
 			const withArt = recent.filter((it) => it.BackdropImageTags && it.BackdropImageTags.length);
-			setHero(withArt[0] || recent[0] || null);
+			const newHero = withArt[0] || recent[0] || null;
+			const prev = recallPage(memoKey);
+			const old = prev && prev.rows ? prev : null;
+			// Al volver con la memoria ya pintada solo se refrescan los datos.
+			if (!old) {
+				setRows(baseRows);
+				setHero(newHero);
+			}
+			setGenres(genreList);
 			setLoading(false);
 			// Filas por género (las seis con más títulos), también lo más nuevo primero.
 			const picks = genreList.slice().sort((a, b) => (b.ChildCount || 0) - (a.ChildCount || 0)).slice(0, 6);
 			const byGenre = await Promise.all(picks.map((g) => q({Genres: g.Name, Limit: 24}).then((items) => ({id: 'g-' + g.Id, title: g.Name, items}))));
-			if (!cancelled) setRows((prev) => prev.concat(byGenre.filter((r) => r.items.length >= 3)));
+			if (cancelled) return;
+			const all = baseRows.concat(byGenre.filter((r) => r.items.length >= 3));
+			setRows(all);
+			rememberPage(memoKey, {rows: all, genres: genreList, hero: old ? old.hero : newHero});
 		})();
 		return () => {
 			cancelled = true;
 		};
-	}, [api, library.Id, type]);
+	}, [api, library.Id, type]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
-		if (loading || grid) return;
-		setTimeout(() => {
+		rememberPage(memoKey, {grid});
+	}, [grid, memoKey]);
+
+	useEffect(() => {
+		if (loading || grid) return undefined;
+		const t = setTimeout(() => {
+			const back = recallPage(memoKey);
+			if (back && back.focusId && Spotlight.focus(back.focusId)) return;
 			if (!Spotlight.focus('cine-lib-buttons')) Spotlight.focus('cine-lib-chips');
 		}, 60);
-	}, [loading, grid]);
+		return () => clearTimeout(t);
+	}, [loading, grid]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	useEffect(() => {
 		if (!backHandlerRef) return undefined;
@@ -118,6 +138,8 @@ const CineLibraryRows = ({library, onSelectItem, onPlay, backHandlerRef, library
 			if (backHandlerRef.current === handler) backHandlerRef.current = null;
 		};
 	}, [backHandlerRef, grid, showGenres, mode]);
+
+	const trackFocus = useCallback((e) => rememberFocus(memoKey)(e), [memoKey]);
 
 	const toHero = useCallback(() => {
 		setMode('hero');
@@ -193,7 +215,7 @@ const CineLibraryRows = ({library, onSelectItem, onPlay, backHandlerRef, library
 	}
 
 	return (
-		<div className={`${css.home} ${mode === 'rows' ? css.modeRows : css.modeHero}`} onScroll={keepUnscrolled}>
+		<div className={`${css.home} ${mode === 'rows' ? css.modeRows : css.modeHero}`} onScroll={keepUnscrolled} onFocus={trackFocus}>
 			<div className={css.backdrop}>
 				{bg && <Img key={bg} className={css.backdropImg} src={bg} />}
 				<div className={css.shadeLeft} />

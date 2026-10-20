@@ -9,7 +9,7 @@ import {useAuth} from '../../context/AuthContext';
 import {useSeerr} from '../../context/SeerrContext';
 import * as seerrApi from '../../services/seerrApi';
 import CineRow, {Img} from '../../components/cine/CineRow';
-import {CineButton, CineToast, EmptyState, TaquitoLoader, useSectionNav, focusSoon} from '../../components/cine/CineBits';
+import {CineButton, CineToast, EmptyState, TaquitoLoader, useSectionNav, focusSoon, recallPage, rememberPage, rememberFocus} from '../../components/cine/CineBits';
 import {backdropUrl, itemTitle, metaLine, overviewOf, seerrState, fromSeerr} from '../../components/cine/cineUtils';
 
 import cineCss from '../../components/cine/Cine.module.less';
@@ -30,12 +30,15 @@ const keepUnscrolled = (e) => {
 const withType = (type) => (x) => fromSeerr({...x, mediaType: x.mediaType || type});
 
 const CineSeerr = ({onSelectItem, onSelectGenre, onOpenRequests, backHandlerRef}) => {
-	const {serverUrl} = useAuth();
+	const {serverUrl, user: authUser} = useAuth();
+	const memoKey = 'seerr-' + (authUser ? authUser.Id : '');
 	const {isEnabled, isAuthenticated, user: seerrUser} = useSeerr();
-	const [rows, setRows] = useState([]);
-	const [genres, setGenres] = useState([]);
-	const [hero, setHero] = useState(null);
-	const [loading, setLoading] = useState(true);
+	const saved = recallPage(memoKey);
+	const memo = saved && saved.rows ? saved : null;
+	const [rows, setRows] = useState(memo ? memo.rows : []);
+	const [genres, setGenres] = useState(memo ? memo.genres : []);
+	const [hero, setHero] = useState(memo ? memo.hero : null);
+	const [loading, setLoading] = useState(!memo);
 	const [mode, setMode] = useState('hero');
 	const [offset, setOffset] = useState(0);
 	const [preview, setPreview] = useState(null);
@@ -69,10 +72,14 @@ const CineSeerr = ({onSelectItem, onSelectGenre, onOpenRequests, backHandlerRef}
 				{id: 'upcomingTv', title: 'Series que están por llegar', items: upcomingTv},
 				{id: 'watchlist', title: 'Tu lista de deseos', items: watchlist}
 			].filter((r) => r.items.length);
+			const g = Array.isArray(genreMovies) ? genreMovies : [];
+			const prev = recallPage(memoKey);
+			const h = prev && prev.hero ? prev.hero : (trending.find((x) => x.backdropPath) || trending[0] || null);
 			setRows(list);
-			setGenres(Array.isArray(genreMovies) ? genreMovies : []);
-			setHero(trending.find((x) => x.backdropPath) || trending[0] || null);
+			setGenres(g);
+			setHero(h);
 			setLoading(false);
+			rememberPage(memoKey, {rows: list, genres: g, hero: h});
 		})();
 		return () => {
 			cancelled = true;
@@ -80,11 +87,16 @@ const CineSeerr = ({onSelectItem, onSelectGenre, onOpenRequests, backHandlerRef}
 	}, [isEnabled]);
 
 	useEffect(() => {
-		if (loading) return;
-		setTimeout(() => {
+		if (loading) return undefined;
+		const t = setTimeout(() => {
+			const back = recallPage(memoKey);
+			if (back && back.focusId && Spotlight.focus(back.focusId)) return;
 			if (!Spotlight.focus('cine-seerr-buttons')) Spotlight.focus('cine-seerr-chips');
 		}, 60);
+		return () => clearTimeout(t);
 	}, [loading]);
+
+	const trackFocus = useCallback((e) => rememberFocus(memoKey)(e), [memoKey]);
 
 	useEffect(() => {
 		if (!backHandlerRef) return undefined;
@@ -151,14 +163,16 @@ const CineSeerr = ({onSelectItem, onSelectGenre, onOpenRequests, backHandlerRef}
 		try {
 			if (hero.mediaType === 'tv') await seerrApi.requestTv(hero.id, {seasons: 'all'});
 			else await seerrApi.requestMovie(hero.id);
-			setHero({...hero, mediaInfo: {...(hero.mediaInfo || {}), status: 2}});
+			const asked = {...hero, mediaInfo: {...(hero.mediaInfo || {}), status: 2}};
+			setHero(asked);
+			rememberPage(memoKey, {hero: asked});
 			setToast({id: Date.now(), title: '¡Pedido!', text: `${itemTitle(hero)} se descargará en cuanto se apruebe.`});
 		} catch (e) {
 			setToast({id: Date.now(), title: 'No se ha podido pedir', text: (e && e.message) || 'Inténtalo otra vez en un rato.'});
 		} finally {
 			setBusy(false);
 		}
-	}, [hero, busy]);
+	}, [hero, busy, memoKey]);
 
 	const info = useCallback(() => hero && onSelectItem?.(hero), [hero, onSelectItem]);
 	const openGenre = useCallback((e) => {
@@ -186,7 +200,7 @@ const CineSeerr = ({onSelectItem, onSelectGenre, onOpenRequests, backHandlerRef}
 	const shownState = shown ? seerrState(shown) : null;
 
 	return (
-		<div className={`${css.home} ${mode === 'rows' ? css.modeRows : css.modeHero}`} onScroll={keepUnscrolled}>
+		<div className={`${css.home} ${mode === 'rows' ? css.modeRows : css.modeHero}`} onScroll={keepUnscrolled} onFocus={trackFocus}>
 			<div className={css.backdrop}>
 				{bg && <Img key={bg} className={css.backdropImg} src={bg} />}
 				<div className={css.shadeLeft} />

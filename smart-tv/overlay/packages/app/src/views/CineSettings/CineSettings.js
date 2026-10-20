@@ -137,6 +137,13 @@ const CineSettingsHome = ({onBack, onLibrariesChanged, onRunSetupWizard, onSelec
 	const [advanced, setAdvanced] = useState(null);
 	const [update, setUpdate] = useState(null);
 	const lastRowRef = useRef({});
+	const pageRef = useRef(null);
+	const lastFocusRef = useRef(0);
+	const trackFocus = useCallback((e) => {
+		const all = Array.prototype.slice.call(document.querySelectorAll(`.${css.list} .spottable`));
+		const i = all.indexOf(e.target);
+		if (i >= 0) lastFocusRef.current = i;
+	}, []);
 
 	const set = useCallback((key, value) => updateSetting(key, value), [updateSetting]);
 	const cycle = useCallback((key, options) => () => set(key, nextOf(options, settings[key])), [set, settings]);
@@ -177,7 +184,26 @@ const CineSettingsHome = ({onBack, onLibrariesChanged, onRunSetupWizard, onSelec
 	useEffect(() => {
 		if (advanced) return undefined;
 		const handleKeyDown = (e) => {
-			if (!isBackKey(e) || isTvKeyboardVisible()) return;
+			if (isTvKeyboardVisible()) return;
+			// Al cerrarse una ventana por encima (la de perfiles) el foco se queda
+			// en el aire: la primera tecla lo devuelve a la fila donde estabas.
+			const lost = !document.activeElement || document.activeElement === document.body;
+			const code = e.keyCode;
+			if (lost && (isBackKey(e) || (code >= 37 && code <= 40) || code === 13)) {
+				const all = document.querySelectorAll(`.${css.list} .spottable`);
+				const el = all[lastFocusRef.current] || all[0];
+				if (el) {
+					e.preventDefault();
+					e.stopPropagation();
+					Spotlight.focus(el);
+					return;
+				}
+			}
+			if (!isBackKey(e)) return;
+			// Si hay algo abierto encima (la ventana de perfiles, un diálogo),
+			// el Atrás es suyo.
+			const root = pageRef.current;
+			if (root && document.activeElement && document.activeElement !== document.body && !root.contains(document.activeElement)) return;
 			e.preventDefault();
 			e.stopPropagation();
 			if (page !== 'home') setPage('home');
@@ -283,7 +309,7 @@ const CineSettingsHome = ({onBack, onLibrariesChanged, onRunSetupWizard, onSelec
 	} else if (page === 'profile') {
 		body = (
 			<Section>
-				<Row icon="back" title="Cambiar de perfil" desc="Vuelve a «¿Quién está viendo?»" onClick={onSwitchUser} />
+				<Row icon="back" title="Cambiar de perfil" desc="Elige otro perfil de este servidor o añade uno" onClick={onSwitchUser} />
 				<Row icon="chevron" title="PIN y cuenta" desc="Protege tu perfil con un PIN" onClick={openAdvanced('account')} />
 				<Row icon="chevron" title="Control parental" desc="Modo niños y clasificación por edades" onClick={openAdvanced('kidsMode')} />
 			</Section>
@@ -329,12 +355,12 @@ const CineSettingsHome = ({onBack, onLibrariesChanged, onRunSetupWizard, onSelec
 	}
 
 	return (
-		<div className={css.page}>
+		<div className={css.page} ref={pageRef}>
 			<div className={css.header}>
 				<h1 className={css.title}>{title}</h1>
 				{page !== 'home' && <div className={css.hint}>Atrás para volver</div>}
 			</div>
-			<Page className={css.list} spotlightId="cine-settings-page" key={page}>
+			<Page className={css.list} spotlightId="cine-settings-page" key={page} onFocus={trackFocus}>
 				{body}
 			</Page>
 		</div>

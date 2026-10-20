@@ -1,5 +1,5 @@
 diff --git a/packages/app/src/App/App.js b/packages/app/src/App/App.js
-index 8091430..f4f76cb 100644
+index 8091430..a5aa228 100644
 --- a/packages/app/src/App/App.js
 +++ b/packages/app/src/App/App.js
 @@ -70,13 +70,13 @@ import {buildThemeCssVars, toRgbTriplet} from '../theme/themeSpec';
@@ -57,7 +57,7 @@ index 8091430..f4f76cb 100644
  						<Panel>
  							{panelIndex === PANELS.SETTINGS && (
  								<Settings
-+									onSwitchUser={handleSwitchUser}
++									onSwitchUser={handleOpenAccountModal}
  									onBack={handleBack}
  									onLibrariesChanged={fetchLibraries}
  									onRunSetupWizard={handleRunSetupWizard}

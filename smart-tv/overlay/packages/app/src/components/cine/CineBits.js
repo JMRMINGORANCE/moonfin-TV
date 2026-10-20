@@ -123,3 +123,16 @@ export const focusSoon = (id) => {
 	setTimeout(retry, 30);
 	return true;
 };
+
+// Memoria de pantallas que se desmontan al abrir una ficha (bibliotecas,
+// Descubrir): al volver se pintan al momento con lo que tenían y el foco
+// vuelve a la tarjeta en la que estabas.
+const pageMemo = {};
+export const recallPage = (key) => pageMemo[key] || null;
+export const rememberPage = (key, values) => {
+	pageMemo[key] = {...(pageMemo[key] || {}), ...values};
+};
+export const rememberFocus = (key) => (e) => {
+	const id = e.target && e.target.getAttribute && e.target.getAttribute('data-spotlight-id');
+	if (id) rememberPage(key, {focusId: id});
+};
