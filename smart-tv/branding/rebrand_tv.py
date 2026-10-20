@@ -32,6 +32,10 @@ APP_ID = "TaquitoFlx.TaquitoFlix"
 PACKAGE = "TaquitoFlx"
 WIDGET_ID = "http://josemingorance.es/taquitoflix"
 DEFAULT_SERVER = "https://tv.josemingorance.es"
+CSP = ("default-src * 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; "
+       "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.youtube.com https://*.googlevideo.com; "
+       "style-src 'self' 'unsafe-inline' https:; img-src * data: blob:; media-src * data: blob:; "
+       "connect-src * data: blob:; font-src * data: blob:; worker-src 'self' blob:; frame-src *")
 
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path.cwd()
 VERSION = sys.argv[2] if len(sys.argv) > 2 else "2.7.0"
@@ -70,6 +74,12 @@ def tizen_config():
         # El servicio de vista previa de Smart Hub lleva el id del paquete.
         (r'(<tizen:service[^>]*\bid=")[^".]*(\.[^"]*")', rf'\g<1>{PACKAGE}\g<2>'),
     ])
+    # Política de contenido explícita: sin ella la tele aplica una por defecto
+    # más estricta que puede bloquear partes de la app.
+    text = cfg.read_text(encoding="utf-8")
+    if "tizen:content-security-policy" not in text:
+        text = text.replace("</widget>", f"    <tizen:content-security-policy>{CSP}</tizen:content-security-policy>\n</widget>")
+        cfg.write_text(text, encoding="utf-8")
     log(f"config.xml: {APP_ID} versión {VERSION}")
 
 
@@ -132,6 +142,9 @@ def defaults():
     edit(APP / "src/views/Login/Login.js", [
         (r"const \[addressValue, setAddressValue\] = useState\(''\);",
          f"const [addressValue, setAddressValue] = useState('{DEFAULT_SERVER}');"),
+        # Al abrir «Añadir servidor» el campo también trae tu servidor.
+        (r"(const openAddDialog = useCallback\(\(\) => \{\s*)setAddressValue\(''\);",
+         rf"\g<1>setAddressValue('{DEFAULT_SERVER}');"),
     ])
     log(f"idioma español y servidor {DEFAULT_SERVER}")
 

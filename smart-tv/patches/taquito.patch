@@ -89,6 +89,53 @@ index 8091430..f4f76cb 100644
  	}
  } catch (e) { /* use default */ }
  
+diff --git a/packages/app/src/components/LoadingAnimation/MoonfinLogoAnimation.js b/packages/app/src/components/LoadingAnimation/MoonfinLogoAnimation.js
+index f8c760b..81105c5 100644
+--- a/packages/app/src/components/LoadingAnimation/MoonfinLogoAnimation.js
++++ b/packages/app/src/components/LoadingAnimation/MoonfinLogoAnimation.js
+@@ -1,14 +1,7 @@
+-import {useRef} from 'react';
+-
+ import css from './LoadingAnimation.module.less';
+ 
+-let nextGradientId = 0;
+-
+ // The logo turning a full circle about its upright axis, once every eight seconds at full speed.
+ const MoonfinLogoAnimation = ({size, speed}) => {
+-	// Gradient ids are shared by the whole document, so each logo on screen needs its own.
+-	const gradientId = useRef(null);
+-	if (!gradientId.current) gradientId.current = `moonfinLogoGradient${++nextGradientId}`;
+ 	const duration = Math.round(8000 / speed) + 'ms';
+ 
+ 	return (
+@@ -16,25 +9,8 @@ const MoonfinLogoAnimation = ({size, speed}) => {
+ 			className={css.logoSpin}
+ 			style={{width: size + 'px', height: size + 'px', WebkitAnimationDuration: duration, animationDuration: duration}}
+ 		>
+-			<svg viewBox="0 0 1024 1024" width={size} height={size} aria-hidden="true" focusable="false">
+-				<defs>
+-					<linearGradient id={gradientId.current} gradientUnits="userSpaceOnUse" x1="302.974" y1="208.6414" x2="709.6098" y2="615.2772">
+-						<stop offset="0.1" stopColor="#AA5CC3" />
+-						<stop offset="0.2029" stopColor="#9C62C5" />
+-						<stop offset="0.3988" stopColor="#7672CB" />
+-						<stop offset="0.6646" stopColor="#3A8CD4" />
+-						<stop offset="0.8944" stopColor="#00A4DC" />
+-					</linearGradient>
+-				</defs>
+-				<path
+-					fill={`url(#${gradientId.current})`}
+-					d="M580.593,137.312c0.236,1.437-1.764,1.397-2.792,1.682c-9.692,2.687-20.11,4.17-29.967,7.043c-121.791,35.504-202.149,150.49-179.921,278.449c12.427,71.54,55.048,119.207,132.449,97.079c88.146-25.199,99.429-101.063,147.839-164.161c20.295-26.453,44.824-49.573,71.482-69.518c4.092-3.062,44.959-31.555,46.91-29.58c-4.974,18.877-12.625,36.926-17.711,55.778c-17.376,64.396-23.167,162.393,67.715,164.225l-10.013,39.99c-16.446-7.617-33.575-13.262-51.63-15.857c-31.725-4.561-68.255-0.546-99.549,6.166c-81.083,17.391-149.924,71.416-231.798,89.202c-65.253,14.176-171.515,7.963-199.029-64.993c-32.857-87.123-17.129-196.894,34.796-273.239C329.708,156.173,458.551,108.174,580.593,137.312z"
+-				/>
+-				<path
+-					fill="#00A4DC"
+-					d="M796.599,546.311c-8.783,22.644-20.315,44.297-34.604,63.909c-16.913-7.035-35.708-8.954-53.939-7.959c-101.271,5.523-183.793,95.852-288.454,89.052l14.808,4.677c94.845,28.604,181.214-45.296,270.697-49.677c3.07-0.15,25.483-0.402,25.47,2.49c-42.221,42.774-97.662,73.834-156.791,86.189c-120.75,25.23-242.358-26.603-312.177-126.206l0.484-1.478c25.284,19.74,57.578,33.429,89.297,38.703c134.365,22.345,209.318-77.749,329.022-102.394C719.682,535.531,757.934,534.758,796.599,546.311z"
+-				/>
+-			</svg>
++			{/* TaquitoFlix: Taquito da vueltas mientras carga. */}
++			<img src="resources/cine/taquito.svg" width={size} height={size} alt="" aria-hidden="true" />
+ 		</div>
+ 	);
+ };
 diff --git a/packages/app/src/components/Screensaver/Screensaver.js b/packages/app/src/components/Screensaver/Screensaver.js
 index 56391f2..913dbf6 100644
 --- a/packages/app/src/components/Screensaver/Screensaver.js
@@ -340,7 +387,7 @@ index 3673d71..ef42122 100644
  	const [searchQuery, setSearchQuery] = useState('');
  	const [cardText, setCardText] = useStorage(`library_cardText_${libraryId}`, 'on');
 diff --git a/packages/app/src/views/Login/Login.js b/packages/app/src/views/Login/Login.js
-index fa8e86e..0c8a5b2 100644
+index fa8e86e..d1cf2ef 100644
 --- a/packages/app/src/views/Login/Login.js
 +++ b/packages/app/src/views/Login/Login.js
 @@ -42,6 +42,8 @@ const credentialFocusTarget = (user) => {
@@ -447,11 +494,20 @@ index fa8e86e..0c8a5b2 100644
  					/>
  				</div>
  
+@@ -1232,7 +1232,7 @@ const Login = ({
+ 
+ 				{step === 'servers' && (
+ 					<div className={css.versionFooter}>
+-						{$L('Moonfin version {version}').replace('{version}', process.env.REACT_APP_VERSION || '')}
++						{$L('Moonfin version {version}').replace('{version}', process.env.REACT_APP_TAQUITO_VERSION || process.env.REACT_APP_VERSION || '')}
+ 					</div>
+ 				)}
+ 
 diff --git a/packages/app/src/views/Login/Login.module.less b/packages/app/src/views/Login/Login.module.less
-index 3f8e443..c7f35c2 100644
+index 3f8e443..3f62f68 100644
 --- a/packages/app/src/views/Login/Login.module.less
 +++ b/packages/app/src/views/Login/Login.module.less
-@@ -712,3 +712,129 @@
+@@ -712,3 +712,136 @@
  .keyboardSpacerOpen {
  	height: 560px;
  }
@@ -580,6 +636,13 @@ index 3f8e443..c7f35c2 100644
 +	margin-top: 34px;
 +	font-size: 24px;
 +	color: #6d6d6d;
++}
++
++// El tema aún no se ha cargado al iniciar sesión: el rojo va fijo aquí.
++.page {
++	--theme-accent: #e50914;
++	--accent-color: #e50914;
++	--theme-accent-rgb: 229, 9, 20;
 +}
 diff --git a/packages/app/src/views/Player/SkipSegmentOverlay.module.less b/packages/app/src/views/Player/SkipSegmentOverlay.module.less
 index 24ca85a..149e24e 100644
@@ -809,3 +872,24 @@ index ea3f104..58b938a 100644
  	{ value: 'library', label: $L('Library Art') },
  	{ value: 'black', label: $L('Black') },
  	{ value: 'moonfin', label: $L('Moonfin') },
+diff --git a/packages/build-tizen/scripts/build-wgt.js b/packages/build-tizen/scripts/build-wgt.js
+index 2432727..80481da 100644
+--- a/packages/build-tizen/scripts/build-wgt.js
++++ b/packages/build-tizen/scripts/build-wgt.js
+@@ -430,6 +430,16 @@ async function main() {
+ 		warn('banner-dark.png not found at ' + bannerSrc);
+ 	}
+ 
++	// TaquitoFlix: Taquito, el logotipo y los fondos del protector de pantalla.
++	const cineSrc = path.join(APP_DIR, 'resources', 'cine');
++	if (fs.existsSync(cineSrc)) {
++		fs.mkdirSync(path.join(DIST, 'resources', 'cine'), { recursive: true });
++		copyDir(cineSrc, path.join(DIST, 'resources', 'cine'));
++		success('Copied TaquitoFlix artwork');
++	} else {
++		warn('resources/cine not found (TaquitoFlix artwork missing)');
++	}
++
+ 	// Copy libpgs worker for PGS subtitle rendering
+ 	const libpgsWorkerSrc = path.join(REPO_ROOT, 'node_modules', 'libpgs', 'dist', 'libpgs.worker.js');
+ 	const libpgsWorkerDest = path.join(DIST, 'libpgs.worker.js');

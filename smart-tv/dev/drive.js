@@ -36,6 +36,7 @@ const STRICT_CSP = process.env.STRICT_CSP === '1';
 	page.on('console', (m) => {
 		if (['error', 'warning'].includes(m.type())) logs.push(`${m.type()}: ${m.text().slice(0, 300)}`);
 	});
+	page.on('requestfailed', (r) => logs.push(`FAIL ${r.url().slice(0, 140)} ${r.failure() ? r.failure().errorText : ''}`));
 	page.on('pageerror', (e) => logs.push(`PAGEERROR: ${e.message}\n${(e.stack || '').split('\n').slice(0, 4).join('\n')}`));
 	// Solo se deja salir al Jellyfin de prueba y a la propia app.
 	await page.route(/^https?:\/\//, (route) => {
@@ -54,10 +55,12 @@ const STRICT_CSP = process.env.STRICT_CSP === '1';
 		return route.fulfill({status: 200, contentType: type, body: fs.readFileSync(file)});
 	});
 	if (STRICT_CSP) {
-		await page.route(/^http:\/\/localhost:8080\/(index\.html)?(\?.*)?(#.*)?$/, async (route) => {
+		const origin = new URL(appUrl).origin.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+		await page.route(new RegExp('^' + origin + '\\/(index\\.html)?(\\?.*)?(#.*)?$'), async (route) => {
 			const r = await route.fetch();
 			let body = await r.text();
-			body = body.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="script-src 'self'; style-src 'self'">`);
+			const csp = process.env.CSP || "script-src 'self'; style-src 'self'";
+				body = body.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="${csp.replace(/"/g, '&quot;')}">`);
 			route.fulfill({response: r, body});
 		});
 	}
@@ -95,6 +98,7 @@ const STRICT_CSP = process.env.STRICT_CSP === '1';
 			await page.screenshot({path: path.join(outDir, `${rest}.png`)});
 			console.log(`captura ${rest}  foco: ${await focusInfo()}`);
 		} else if (cmd === 'goto') await page.evaluate((h) => { location.hash = h; }, rest);
+		else if (cmd === 'evalfile') console.log('eval:', JSON.stringify(await page.evaluate(fs.readFileSync(rest, 'utf8'))).slice(0, 2000));
 		else if (cmd === 'eval') console.log('eval:', JSON.stringify(await page.evaluate(rest)).slice(0, 2000));
 		else if (cmd === 'focus') console.log('foco:', await focusInfo());
 		else if (cmd === 'login') {
