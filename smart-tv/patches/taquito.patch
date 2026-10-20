@@ -1,8 +1,8 @@
 diff --git a/packages/app/src/App/App.js b/packages/app/src/App/App.js
-index 8091430..8df0d9b 100644
+index 8091430..f4f76cb 100644
 --- a/packages/app/src/App/App.js
 +++ b/packages/app/src/App/App.js
-@@ -70,11 +70,11 @@ import {buildThemeCssVars, toRgbTriplet} from '../theme/themeSpec';
+@@ -70,13 +70,13 @@ import {buildThemeCssVars, toRgbTriplet} from '../theme/themeSpec';
  import {applyThemeOverrides} from '../theme/themeOverrides';
  import {resolveOverlayColor} from '../theme/overlayColors';
  import Login from '../views/Login';
@@ -15,8 +15,11 @@ index 8091430..8df0d9b 100644
 +const Details = lazy(() => import('../views/CineDetails'));
 +const Library = lazy(() => import('../views/CineLibrary'));
  const Search = lazy(() => import('../views/Search'));
- const Settings = lazy(() => import('../views/Settings'));
+-const Settings = lazy(() => import('../views/Settings'));
++const Settings = lazy(() => import('../views/CineSettings'));
  const Player = lazy(() => import('../views/Player'));
+ const Favorites = lazy(() => import('../views/Favorites'));
+ const Genres = lazy(() => import('../views/Genres'));
 @@ -84,7 +84,7 @@ const GenreBrowse = lazy(() => import('../views/GenreBrowse'));
  const Person = lazy(() => import('../views/Person'));
  const LiveTV = lazy(() => import('../views/LiveTV'));
@@ -36,7 +39,29 @@ index 8091430..8df0d9b 100644
  		})();
  		return () => {
  			cancelled = true;
-@@ -1904,7 +1905,8 @@ const AppContent = (props) => {
+@@ -1118,10 +1119,10 @@ const AppContent = (props) => {
+ 		navigateTo(PANELS.SEARCH);
+ 	}, [navigateTo]);
+ 
++	// TaquitoFlix: los ajustes son una pantalla completa propia.
+ 	const handleOpenSettings = useCallback(() => {
+-		setSettingsInitialView(null);
+-		setShowSettingsPanel(true);
+-	}, []);
++		navigateTo(PANELS.SETTINGS);
++	}, [navigateTo]);
+ 
+ 	const handleOpenFriends = useCallback(() => {
+ 		setSettingsInitialView('friends');
+@@ -1713,6 +1714,7 @@ const AppContent = (props) => {
+ 						<Panel>
+ 							{panelIndex === PANELS.SETTINGS && (
+ 								<Settings
++									onSwitchUser={handleSwitchUser}
+ 									onBack={handleBack}
+ 									onLibrariesChanged={fetchLibraries}
+ 									onRunSetupWizard={handleRunSetupWizard}
+@@ -1904,7 +1906,8 @@ const AppContent = (props) => {
  				the same card. It's let go at sign in and during playback, which wants the memory. */}
  				{panelIndex !== PANELS.LOGIN && panelIndex !== PANELS.PLAYER && panelIndex !== PANELS.GAME_PLAYER && (
  					<HomeLayer style={panelIndex === PANELS.BROWSE ? null : hiddenStyle}>
@@ -46,7 +71,7 @@ index 8091430..8df0d9b 100644
  							onSelectItem={handleSelectItem}
  							onSelectLibrary={handleSelectLibrary}
  							onOpenRecordings={handleOpenRecordings}
-@@ -2044,14 +2046,15 @@ const AppContent = (props) => {
+@@ -2044,14 +2047,15 @@ const AppContent = (props) => {
  	);
  };
  
@@ -64,6 +89,84 @@ index 8091430..8df0d9b 100644
  	}
  } catch (e) { /* use default */ }
  
+diff --git a/packages/app/src/components/Screensaver/Screensaver.js b/packages/app/src/components/Screensaver/Screensaver.js
+index 56391f2..913dbf6 100644
+--- a/packages/app/src/components/Screensaver/Screensaver.js
++++ b/packages/app/src/components/Screensaver/Screensaver.js
+@@ -105,6 +105,12 @@ const loadBackdropBatch = async ({contentType, libraryIds, collectionIds, exclud
+ 	return items.slice(0, BACKDROP_BATCH_SIZE);
+ };
+ 
++const TAQUITO_WALLPAPERS = [
++	'resources/cine/wallpaper-1.jpg',
++	'resources/cine/wallpaper-2.jpg',
++	'resources/cine/wallpaper-3.jpg'
++];
++
+ const Screensaver = ({
+ 	visible,
+ 	backdrop = 'library',
+@@ -124,6 +130,14 @@ const Screensaver = ({
+ 	serverUrl
+ }) => {
+ 	const showLibrary = backdrop === 'library';
++	// TaquitoFlix: fondos dibujados con Taquito que se van turnando.
++	const showTaquito = backdrop === 'taquito';
++	const [wallIndex, setWallIndex] = useState(0);
++	useEffect(() => {
++		if (!visible || !showTaquito) return undefined;
++		const t = setInterval(() => setWallIndex((i) => (i + 1) % TAQUITO_WALLPAPERS.length), 20000);
++		return () => clearInterval(t);
++	}, [visible, showTaquito]);
+ 	const showClock = component === 'clock';
+ 	const {scale, speedMultiplier, bounces, box, boxStyle, anchorClass} = resolveLayout({
+ 		component,
+@@ -355,6 +369,18 @@ const Screensaver = ({
+ 				</div>
+ 			)}
+ 
++			{showTaquito && (
++				<div className={css.backdropContainer}>
++					{TAQUITO_WALLPAPERS.map((src, i) => (
++						<div
++							key={src}
++							className={css.taquitoWall + ' ' + (i === wallIndex ? css.taquitoWallVisible : '')}
++							style={{backgroundImage: 'url(' + src + ')'}}
++						/>
++					))}
++				</div>
++			)}
++
+ 			{isGradientBackdrop(backdrop) && <ScreensaverGradient backdrop={backdrop} />}
+ 
+ 			{showLibrary && !backdropUrl && (
+diff --git a/packages/app/src/components/Screensaver/Screensaver.module.less b/packages/app/src/components/Screensaver/Screensaver.module.less
+index 7474c61..2ea156d 100644
+--- a/packages/app/src/components/Screensaver/Screensaver.module.less
++++ b/packages/app/src/components/Screensaver/Screensaver.module.less
+@@ -283,3 +283,22 @@
+ 	87.5% { opacity: 0.146; }
+ 	100% { opacity: 0.5; }
+ }
++
++// TaquitoFlix: fondos de Taquito con fundido lento entre ellos.
++.taquitoWall {
++	position: absolute;
++	top: 0;
++	left: 0;
++	width: 100%;
++	height: 100%;
++	background-size: cover;
++	background-position: center;
++	opacity: 0;
++	transform: scale(1.04);
++	transition: opacity 1.8s ease, transform 20s linear;
++}
++
++.taquitoWallVisible {
++	opacity: 1;
++	transform: scale(1.12);
++}
 diff --git a/packages/app/src/components/Sidebar/Sidebar.module.less b/packages/app/src/components/Sidebar/Sidebar.module.less
 index 2321bde..2df3e32 100644
 --- a/packages/app/src/components/Sidebar/Sidebar.module.less
@@ -80,7 +183,7 @@ index 2321bde..2df3e32 100644
 +	box-shadow: 160px 0 220px 80px rgba(0, 0, 0, 0.88);
 +}
 diff --git a/packages/app/src/context/defaultSettings.js b/packages/app/src/context/defaultSettings.js
-index 3d452b8..6ccf120 100644
+index 3d452b8..9182943 100644
 --- a/packages/app/src/context/defaultSettings.js
 +++ b/packages/app/src/context/defaultSettings.js
 @@ -9,7 +9,7 @@ export const defaultSettings = {
@@ -101,7 +204,7 @@ index 3d452b8..6ccf120 100644
  	// The plugin profile this device syncs with. Empty follows the TV profile. It's a choice
  	// about this device rather than the account, so it never syncs.
  	syncProfile: '',
-@@ -200,7 +200,7 @@ export const defaultSettings = {
+@@ -200,15 +200,15 @@ export const defaultSettings = {
  	serverSortBy: 'name',
  	exitConfirmation: true,
  	updateNotificationsEnabled: true,
@@ -110,6 +213,25 @@ index 3d452b8..6ccf120 100644
  	navbarAlwaysExpanded: false,
  	oledMode: 'off',
  	screensaverEnabled: true,
+ 	screensaverTimeout: 90,
+-	screensaverDimmingLevel: 50,
++	screensaverDimmingLevel: 20,
+ 	screensaverClockMode: 'staticCorner',
+ 	screensaverMode: 'library',
+-	screensaverBackdrop: 'library',
++	screensaverBackdrop: 'taquito',
+ 	screensaverComponent: 'moonfinLogo',
+ 	screensaverMovement: 'moderate',
+ 	screensaverPosition: 'middle',
+@@ -258,7 +258,7 @@ export const defaultSettings = {
+ 	nextUpCountdownStyle: 'both',
+ 	nextUpTimeout: 7,
+ 	stillWatchingBehavior: 'medium',
+-	skipForwardLength: 30000,
++	skipForwardLength: 10000,
+ 	unpauseRewind: 0,
+ 	showDescriptionOnPause: false,
+ 	// Chosen so the overlay looks unchanged for anyone who never opens the setting.
 @@ -317,8 +317,8 @@ export const defaultSettings = {
  	// instead of letting a handset decide how the TV types.
  	preferSystemImeKeyboard: false,
@@ -121,6 +243,23 @@ index 3d452b8..6ccf120 100644
  	// webOS TLS proxy fallback: when the WebView rejects a server's certificate
  	// (net::ERR_INSECURE_RESPONSE), allow the bundled Node service to fetch with
  	// certificate validation disabled. Off by default; local-only (not synced).
+diff --git a/packages/app/src/services/versionChecker.js b/packages/app/src/services/versionChecker.js
+index c27cf4f..04fdfab 100644
+--- a/packages/app/src/services/versionChecker.js
++++ b/packages/app/src/services/versionChecker.js
+@@ -10,9 +10,10 @@ import $L from '@enact/i18n/$L';
+ import {getFromStorage, saveToStorage} from './storage';
+ import {isTizen, isVega, isWebOS, isXbox} from '../platform';
+ import packageJson from '../../package.json';
+-const APP_VERSION = packageJson.version;
++// TaquitoFlix: se compara con las versiones de TaquitoFlix, no con las de Moonfin.
++const APP_VERSION = process.env.REACT_APP_TAQUITO_VERSION || packageJson.version;
+ 
+-const GITHUB_RELEASES_URL = 'https://api.github.com/repos/Moonfin-Client/Smart-TV/releases';
++const GITHUB_RELEASES_URL = 'https://api.github.com/repos/JMRMINGORANCE/moonfin-TV/releases';
+ const CHECK_COOLDOWN_HOURS = 24;
+ const STORAGE_KEY_LAST_CHECK = 'version_last_check';
+ const STORAGE_KEY_DISMISSED_VERSION = 'version_dismissed';
 diff --git a/packages/app/src/theme/themeRegistry.js b/packages/app/src/theme/themeRegistry.js
 index a848080..4e5c624 100644
 --- a/packages/app/src/theme/themeRegistry.js
@@ -442,6 +581,138 @@ index 3f8e443..c7f35c2 100644
 +	font-size: 24px;
 +	color: #6d6d6d;
 +}
+diff --git a/packages/app/src/views/Player/SkipSegmentOverlay.module.less b/packages/app/src/views/Player/SkipSegmentOverlay.module.less
+index 24ca85a..149e24e 100644
+--- a/packages/app/src/views/Player/SkipSegmentOverlay.module.less
++++ b/packages/app/src/views/Player/SkipSegmentOverlay.module.less
+@@ -112,3 +112,25 @@
+ 	height: 22px;
+ 	color: @accent;
+ }
++
++// TaquitoFlix: «Omitir intro» como en las plataformas: caja con borde blanco.
++.button {
++	border-radius: 6px !important;
++	background: rgba(20, 20, 20, 0.6) !important;
++	border: 3px solid rgba(255, 255, 255, 0.8) !important;
++
++	&:focus {
++		background: #ffffff !important;
++		color: #000000 !important;
++		border-color: #ffffff !important;
++	}
++}
++
++.icon,
++.ringIcon {
++	color: #e50914 !important;
++}
++
++.ringValue {
++	stroke: #e50914 !important;
++}
+diff --git a/packages/app/src/views/Player/TizenPlayer.module.less b/packages/app/src/views/Player/TizenPlayer.module.less
+index 2c97e8e..96f8f51 100644
+--- a/packages/app/src/views/Player/TizenPlayer.module.less
++++ b/packages/app/src/views/Player/TizenPlayer.module.less
+@@ -1229,3 +1229,97 @@
+ // Sits at the end so the row spacing is not eaten by a child margin declared later
+ .castRow { .flex-row-gap(16px); }
+ 
++
++// ---------------------------------------------------------------------------
++// TaquitoFlix: reproductor al estilo de las plataformas de streaming.
++// Barra roja más gruesa, título grande arriba, sombras más profundas.
++// ---------------------------------------------------------------------------
++
++.controlsTop {
++	padding: 44px 70px 120px;
++	background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.45) 55%, transparent 100%);
++}
++
++.mediaTitle {
++	font-size: 44px;
++	font-weight: 800;
++	text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
++}
++
++.mediaSecondary {
++	font-size: 28px;
++	color: rgba(255, 255, 255, 0.85);
++}
++
++.controlsBottom {
++	padding: 160px 70px 34px;
++	background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.6) 45%, transparent 100%);
++}
++
++.progressBar {
++	height: 8px;
++	border-radius: 4px;
++	background: rgba(255, 255, 255, 0.28);
++	transition: height 0.15s;
++}
++
++.progressBar:focus {
++	height: 12px;
++}
++
++.progressBuffered {
++	background: rgba(255, 255, 255, 0.4);
++	border-radius: 4px;
++}
++
++.progressFill {
++	background: #e50914;
++	border-radius: 4px;
++}
++
++.seekIndicator {
++	width: 26px;
++	height: 26px;
++	background: #e50914;
++	box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.35);
++}
++
++.progressBar:focus .seekIndicator {
++	width: 34px;
++	height: 34px;
++	background: #e50914;
++	box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.85);
++}
++
++.controlBtn {
++	width: 92px;
++	height: 92px;
++}
++
++.controlBtn:hover,
++.controlBtn:focus {
++	background: #ffffff;
++	border-color: #ffffff;
++	color: #000000;
++	transform: scale(1.12);
++
++	svg {
++		fill: #000000;
++		color: #000000;
++	}
++}
++
++.controlBtn:hover img,
++.controlBtn:focus img {
++	filter: brightness(0);
++}
++
++.controlBtnActive {
++	color: #e50914;
++}
++
++.timeDisplay,
++.timeEnd {
++	font-size: 26px;
++	color: #e5e5e5;
++}
 diff --git a/packages/app/src/views/Search/Search.js b/packages/app/src/views/Search/Search.js
 index ff161e0..ffb9c0e 100644
 --- a/packages/app/src/views/Search/Search.js
@@ -526,3 +797,15 @@ index 27983fa..1343b46 100644
 +.cineSeerr_download {
 +	background: #e50914;
 +}
+diff --git a/packages/app/src/views/Settings/settingsOptions.js b/packages/app/src/views/Settings/settingsOptions.js
+index ea3f104..58b938a 100644
+--- a/packages/app/src/views/Settings/settingsOptions.js
++++ b/packages/app/src/views/Settings/settingsOptions.js
+@@ -117,6 +117,7 @@ export const getUiScaleOptions = () => [
+ ];
+ 
+ export const getScreensaverBackdropOptions = () => [
++	{ value: 'taquito', label: 'Taquito' },
+ 	{ value: 'library', label: $L('Library Art') },
+ 	{ value: 'black', label: $L('Black') },
+ 	{ value: 'moonfin', label: $L('Moonfin') },

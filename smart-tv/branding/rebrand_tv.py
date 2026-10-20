@@ -86,6 +86,20 @@ APP_NAME_KEYS = [
 ]
 
 
+def spanish():
+    """Completa el español con lo que a Moonfin le falta por traducir."""
+    extra = json.loads((HERE / "es_extra.json").read_text(encoding="utf-8"))
+    path = APP / "resources/es/strings.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    added = 0
+    for key, value in extra.items():
+        if key not in data:
+            data[key] = value
+            added += 1
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
+    log(f"español: {added} textos traducidos de más")
+
+
 def rebrand_strings():
     changed = 0
     base_file = APP / "resources/strings.json"
@@ -174,6 +188,7 @@ if __name__ == "__main__":
     if not (ROOT / "packages/build-tizen").exists():
         sys.exit("Indica la carpeta del código de Moonfin Smart-TV.")
     tizen_config()
+    spanish()
     rebrand_strings()
     defaults()
     images()

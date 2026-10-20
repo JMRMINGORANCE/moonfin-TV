@@ -133,7 +133,12 @@ function seerr(pathname, url) {
 			relatedVideos: [], seasons: m[1] === 'tv' ? [{seasonNumber: 1, episodeCount: 8, name: 'Temporada 1'}] : undefined,
 			mediaInfo: base.mediaInfo || null};
 	}
-	if (/^request/.test(p)) return {pageInfo: {pages: 1, results: 0}, results: []};
+	if (/^request/.test(p)) {
+		if (url.searchParams.get('filter') === 'available') {
+			return {pageInfo: {pages: 1, results: 3}, results: [1001, 1004, 1010].map((t, i) => ({id: 900 + i, status: 2, media: {tmdbId: t, mediaType: 'movie', status: 5}}))};
+		}
+		return {pageInfo: {pages: 1, results: 0}, results: []};
+	}
 	if (/^auth\/me/.test(p)) return {id: 1, displayName: 'Copi', permissions: 2, requestCount: 3};
 	if (/^status/.test(p)) return {version: '2.7.0'};
 	if (/^settings\/public/.test(p)) return {applicationTitle: 'Seerr', localLogin: true};
@@ -232,6 +237,45 @@ const server = http.createServer((req, res) => {
 	req.on('data', (c) => { body += c; });
 	req.on('end', () => {
 		let m;
+		// Reproducción: un vídeo de prueba (webm) para todo, con rangos.
+		if ((m = p.match(/^\/Items\/([^/]+)\/PlaybackInfo$/i))) {
+			const it = items.get(m[1]) || {Id: m[1], RunTimeTicks: 900000000};
+			return json(res, 200, {PlaySessionId: 'ps-' + m[1], MediaSources: [{
+				Id: m[1], Name: it.Name, Protocol: 'File', Container: 'webm', Path: '/media/test.webm', Type: 'Default',
+				SupportsDirectPlay: true, SupportsDirectStream: true, SupportsTranscoding: false, IsRemote: false,
+				RunTimeTicks: 900000000, Bitrate: 700000, DefaultAudioStreamIndex: 1,
+				DirectStreamUrl: `/Videos/${m[1]}/stream.webm?Static=true`, TranscodingUrl: `/Videos/${m[1]}/stream.webm?Static=true&VideoCodec=vp8`, TranscodingSubProtocol: 'http', TranscodingContainer: 'webm',
+				MediaStreams: [
+					{Index: 0, Type: 'Video', Codec: 'vp8', Width: 1280, Height: 720, IsDefault: true},
+					{Index: 1, Type: 'Audio', Codec: 'vorbis', Language: 'spa', DisplayTitle: 'Español', Channels: 2, IsDefault: true},
+					{Index: 2, Type: 'Subtitle', Codec: 'srt', Language: 'spa', DisplayTitle: 'Español', IsExternal: true, DeliveryMethod: 'External', DeliveryUrl: '/Videos/x/x/Subtitles/2/0/Stream.vtt'}
+				]
+			}]});
+		}
+		if (/^\/Videos\/[^/]+\/(stream|master|main)/i.test(p) || /^\/Videos\/[^/]+\/[^/]+\/stream/i.test(p)) {
+			const file = process.env.MOCK_VIDEO || '/tmp/claude-0/test.webm';
+			if (!fs.existsSync(file)) { res.writeHead(404); res.end(); return; }
+			const size = fs.statSync(file).size;
+			const range = req.headers.range;
+			if (range) {
+				const [a, b] = range.replace(/bytes=/, '').split('-');
+				const start = Number(a) || 0;
+				const end = b ? Number(b) : size - 1;
+				res.writeHead(206, {'Content-Range': `bytes ${start}-${end}/${size}`, 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1, 'Content-Type': 'video/webm'});
+				fs.createReadStream(file, {start, end}).pipe(res);
+			} else {
+				res.writeHead(200, {'Content-Length': size, 'Content-Type': 'video/webm', 'Accept-Ranges': 'bytes'});
+				fs.createReadStream(file).pipe(res);
+			}
+			return;
+		}
+		if (/Subtitles\/.*\.vtt$/i.test(p)) {
+			res.writeHead(200, {'Content-Type': 'text/vtt'});
+			res.end('WEBVTT\n\n00:00:01.000 --> 00:00:06.000\nHola, esto es un subtítulo de prueba.\n');
+			return;
+		}
+		if (/^\/Sessions\/Playing/i.test(p)) { res.writeHead(204); res.end(); return; }
+		if (/^\/MediaSegments\//i.test(p)) return json(res, 200, {Items: [{Type: 'Intro', StartTicks: 20000000, EndTicks: 120000000}]});
 		// Imágenes
 		if ((m = p.match(/^\/Items\/([^/]+)\/Images\/(\w+)/i))) {
 			const it = items.get(m[1]) || users.find((u) => u.Id === m[1]) || {Name: m[1]};

@@ -30,6 +30,7 @@ const STRICT_CSP = process.env.STRICT_CSP === '1';
 		args: ['--allow-file-access-from-files', '--autoplay-policy=no-user-gesture-required']
 	});
 	const context = await browser.newContext({viewport: {width: 1920, height: 1080}, locale: 'es-ES'});
+	if (process.env.AVPLAY === '1') await context.addInitScript({path: path.join(__dirname, 'avplay-shim.js')});
 	const page = await context.newPage();
 	const logs = [];
 	page.on('console', (m) => {
@@ -80,6 +81,14 @@ const STRICT_CSP = process.env.STRICT_CSP === '1';
 				await page.keyboard.press(key);
 				await page.waitForTimeout(250);
 			}
+		} else if (cmd === 'hold') {
+			const [key, ms] = rest.split('*');
+			await page.keyboard.down(key);
+			for (let t = 0; t < Number(ms || 900); t += 100) {
+				await page.waitForTimeout(100);
+				await page.keyboard.down(key);
+			}
+			await page.keyboard.up(key);
 		} else if (cmd === 'type') await page.keyboard.type(rest.replace(/_/g, ' '), {delay: 30});
 		else if (cmd === 'shot') {
 			await page.waitForTimeout(600);

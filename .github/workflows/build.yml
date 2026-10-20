@@ -146,6 +146,8 @@ jobs:
         env:
           CI: 'true'
         run: |
+          # La app compara esta versión con las releases para avisar de las nuevas.
+          export REACT_APP_TAQUITO_VERSION="$VERSION"
           npm ci --no-audit --no-fund
           npm run build:tizen -- --skip-lint
           test -f packages/build-tizen/dist/index.html

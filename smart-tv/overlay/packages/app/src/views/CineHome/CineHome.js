@@ -55,6 +55,7 @@ const CineHome = ({onSelectItem, onSelectLibrary, onPlay, isVisible = true, back
 	const rowsRef = useRef({});
 	const previewTimer = useRef(null);
 	const placedRef = useRef(false);
+	const homeRef = useRef(null);
 
 	// -- la destacada -----------------------------------------------------------
 	const hero = useMemo(() => {
@@ -96,7 +97,7 @@ const CineHome = ({onSelectItem, onSelectLibrary, onPlay, isVisible = true, back
 		if (settings.cineShowTop10 !== false && data.top10 && data.top10.length >= 5) add('top10', 'Top 10 en tu biblioteca', data.top10, 'top10');
 		if (data.because) add('because', `Porque viste «${itemTitle(data.because.seed)}»`, data.because.items);
 		add('mylist', 'Mi lista', data.myList);
-		(data.perLibrary || []).forEach(({lib, items}) => add(`lib-${lib.Id}`, `Novedades en ${libraryNoun(lib)}`, items, 'poster', {library: lib}));
+		(data.perLibrary || []).forEach(({lib, items}) => add(`lib-${lib.Id}`, `Novedades en ${lib.Name || libraryNoun(lib)}`, items, 'poster', {library: lib}));
 		(data.sagas || []).forEach(({box, items}) => add(`saga-${box.Id}`, `Saga: ${box.Name.replace(/\s*-\s*(Colección|Collection)$/i, '')}`, items));
 		return list;
 	}, [data, settings.cineShowDownloaded, settings.cineShowLatest, settings.cineShowTop10]);
@@ -137,15 +138,27 @@ const CineHome = ({onSelectItem, onSelectLibrary, onPlay, isVisible = true, back
 		return Spotlight.focus('cine-hero');
 	}, []);
 
-	// Al llegar a la portada el foco va a «Reproducir».
+	// Al llegar a la portada el foco va a «Reproducir»; al volver de otra
+	// pantalla, a la tarjeta en la que estabas.
+	const lastFocusRef = useRef(null);
+	const rememberFocus = useCallback((e) => {
+		lastFocusRef.current = e.target;
+	}, []);
 	useEffect(() => {
-		if (!isVisible || loading || placedRef.current) return;
+		if (!isVisible || loading) return undefined;
+		const first = !placedRef.current;
 		placedRef.current = true;
-		setTimeout(() => {
+		const t = setTimeout(() => {
+			const cur = Spotlight.getCurrent();
+			if (!first && cur && homeRef.current && homeRef.current.contains(cur)) return;
+			const last = lastFocusRef.current;
+			if (!first && last && document.body.contains(last) && Spotlight.focus(last)) return;
 			if (hero) focusHero();
 			else if (rows.length) Spotlight.focus(`cine-row-${rows[0].id}`);
-		}, 80);
-	}, [isVisible, loading, hero, rows, focusHero]);
+		}, first ? 80 : 120);
+		return () => clearTimeout(t);
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isVisible, loading, !!hero]);
 
 	// Atrás desde las filas vuelve arriba; desde arriba deja salir.
 	useEffect(() => {
@@ -229,7 +242,7 @@ const CineHome = ({onSelectItem, onSelectLibrary, onPlay, isVisible = true, back
 	}
 
 	return (
-		<div className={`${css.home} ${mode === 'rows' ? css.modeRows : css.modeHero}`} onScroll={keepUnscrolled}>
+		<div ref={homeRef} className={`${css.home} ${mode === 'rows' ? css.modeRows : css.modeHero}`} onScroll={keepUnscrolled} onFocus={rememberFocus}>
 			<div className={css.backdrop}>
 				{bg && <Img key={bg} className={css.backdropImg} src={bg} />}
 				<div

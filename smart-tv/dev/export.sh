@@ -22,6 +22,6 @@ git ls-files --others --exclude-standard \
 	done
 touch "$HERE/overlay/.keep"
 
-git diff --binary -- . ':(exclude)package-lock.json' > "$HERE/patches/taquito.patch"
+git diff --binary -- . ':(exclude)package-lock.json' ':(exclude)packages/app/resources/*/strings.json' ':(exclude)packages/app/resources/strings.json' > "$HERE/patches/taquito.patch"
 echo "overlay: $(find "$HERE/overlay" -type f ! -name .keep | wc -l) archivos"
 echo "parche:  $(grep -c '^diff --git' "$HERE/patches/taquito.patch") archivos de Moonfin"
