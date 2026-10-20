@@ -30,6 +30,17 @@ jobs:
           # Prueba: ancho de página fijo de 1920 (lo que pide Samsung para la tele).
           sed -i 's|<meta name="viewport"[^>]*>|<meta name="viewport" content="width=1920, user-scalable=no">|' index.html
           grep -q 'content="width=1920' index.html
+          # Política de seguridad (CSP) del config.xml del repo.
+          python3 - ../tizen/config.xml config.xml <<'PY'
+          import re, sys
+          src = open(sys.argv[1], encoding="utf-8").read()
+          csp = re.search(r"\s*<tizen:content-security-policy>.*?</tizen:content-security-policy>", src, re.S).group(0)
+          dst = open(sys.argv[2], encoding="utf-8").read()
+          if "content-security-policy" not in dst:
+              dst = dst.replace("</widget>", csp + "\n</widget>")
+          open(sys.argv[2], "w", encoding="utf-8").write(dst)
+          PY
+          grep -q "tizen:content-security-policy" config.xml
           mkdir -p ../out
       - name: Firmar
         env:

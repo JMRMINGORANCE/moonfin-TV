@@ -34,6 +34,9 @@
     return Math.round(r.width) + 'x' + Math.round(r.height) +
       (n.width !== undefined && n.tagName === 'CANVAS' ? ' (buffer ' + n.width + 'x' + n.height + ')' : '');
   }
+  var webgl2 = (function () {
+    try { return !!document.createElement('canvas').getContext('webgl2'); } catch (e) { return 'error'; }
+  })();
   function tick() {
     var vv = window.visualViewport;
     var canvases = document.querySelectorAll('canvas');
@@ -49,9 +52,7 @@
       'html: ' + size(document.documentElement) + '  body: ' + size(document.body) + '\n' +
       'flutter-view: ' + size(el('flutter-view')) + '  glass-pane: ' + size(el('flt-glass-pane')) + '\n' +
       'canvas: ' + (cs.length ? cs.join(' | ') : 'ninguno') + '\n' +
-      'ResizeObserver: ' + (typeof ResizeObserver) + '  WebGL2: ' + (function () {
-        try { return !!document.createElement('canvas').getContext('webgl2'); } catch (e) { return 'error'; }
-      })() + '\n' +
+      'ResizeObserver: ' + (typeof ResizeObserver) + '  WebGL2: ' + webgl2 + '\n' +
       'navegador: ' + navigator.userAgent.slice(0, 140) + '\n' +
       (errs.length ? 'errores:\n' + errs.slice(-6).join('\n') : 'errores: ninguno');
   }

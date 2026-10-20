@@ -9,6 +9,9 @@
     <tizen:profile name="tv-samsung"/>
     <access origin="*" subdomains="true"/>
     <tizen:allow-navigation>*</tizen:allow-navigation>
+    <!-- Sin esto la tele aplica "script-src 'self'; style-src 'self'": bloquea el
+         motor de Flutter (gstatic), WebAssembly, los scripts en línea y hls.js. -->
+    <tizen:content-security-policy>default-src * 'self' data: blob: filesystem: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https:; img-src * data: blob:; media-src * data: blob:; connect-src * data: blob:; font-src * data: blob:; worker-src 'self' blob:</tizen:content-security-policy>
     <tizen:privilege name="http://tizen.org/privilege/internet"/>
     <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
     <tizen:privilege name="http://developer.samsung.com/privilege/network.public"/>
