@@ -128,7 +128,7 @@ jobs:
             [ -e "$p" ] || continue
             git apply --whitespace=nowarn "$p"
           done
-          cp -r ../smart-tv/overlay/. .
+          if [ -d ../smart-tv/overlay ]; then cp -r ../smart-tv/overlay/. .; fi
 
       - name: Marca TaquitoFlix (nombre, iconos, idioma y servidor)
         run: |
